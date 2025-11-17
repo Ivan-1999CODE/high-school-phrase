@@ -22,6 +22,12 @@
             height: auto;
             aspect-ratio: 800 / 500;
             cursor: pointer;
+            /* 新增：為淡入淡出增加過場效果 */
+            transition: opacity 0.15s ease-in-out;
+        }
+        /* 新增：淡出時的狀態 */
+        canvas.is-fading {
+            opacity: 0;
         }
         /* 側邊欄年份按鈕樣式 */
         .year-btn {
@@ -31,6 +37,10 @@
             border-radius: 0.5rem; /* 8px */
             font-weight: 500;
             color: #334155; /* slate-700 */
+            transition: background-color 0.2s, color 0.2s;
+        }
+        .year-btn:hover {
+/* ... existing code ... -->
             transition: background-color 0.2s, color 0.2s;
         }
         .year-btn:hover {
@@ -55,11 +65,11 @@
     </button>
 
     <!-- 側邊欄 (Sidebar) -->
-    <aside id="sidebar" class="fixed top-0 left-0 z-20 w-64 h-full bg-white shadow-xl transition-transform -translate-x-full lg:translate-x-0 lg:w-60">
-        <div class="p-4">
-            <h2 class="text-xl font-bold text-slate-800">選擇年份 (複習)</h2>
+    <aside id="sidebar" class="fixed top-0 left-0 z-20 w-64 h-full bg-white shadow-xl transition-transform -translate-x-full lg:translate-x-0 lg:w-60 flex flex-col">
+        <div class="p-4 flex-shrink-0">
+            <h2 class="text-xl font-bold text-slate-800">片語分類</h2>
         </div>
-        <nav id="year-selection" class="flex flex-col gap-1 p-3">
+        <nav id="year-selection" class="flex flex-col gap-1 p-3 flex-grow overflow-y-auto">
             <!-- 年份按鈕將由 JavaScript 動態生成 -->
         </nav>
     </aside>
@@ -147,198 +157,6 @@
     <script>
         // 儲存所有片語資料的原始字串
         const rawData = `
-實用會考片語 (1)
-boast of (or about) 吹噓
-out of breath 喘不過氣來
-in brief (=in as few words as possible) 簡言之
-in bulk 成批地,不散裝的
-take the floor 起立發言
-on business 出差辦事.
-be busy with sth. 於某事。 be busy doing sth. 忙於做某事
-last but one 倒數第二.
-but for (=without) 要不是. 表示假設
-buy sth. for...money 用多少錢買
-be capable of 能夠,有能力 be capable of being +過去分詞: 是能夠被…的
-in any case (=for love or money, at any rate, at any price, at any cost, whatever happens; anyhow) 無論如何
-in case (=for fear that) 萬一;
-in case of (=in the event of) 如果發生…萬一 in the case of 至於…,就…而言
-in no case 在任何情況下都不(放句首倒裝句)
-
-實用會考片語 (2)
-be cautious of 謹防
-center one’s attention on (=focus one’s attention on) 把某人的注意力集中在…上
-be certain of (=be sure of) 有把握,一定.
-for certain (=for sure) 肯定地,有把握地
-by chance (=accidentally, by accident) 偶然
-for a change 換換環境(花樣等)
-charge sb. with ... 控告某人犯有…
-in charge of (=responsible for) 負責(某事) in the charge of …由…管
-take charge of (=to be or become responsible for) 負責管理(照顧)
-charge...for 因…索取(費用) , charge sb. with sth. 控告某人犯有…
-round the clock (=all day and all night, usually without stopping) 晝夜不停地
-comment on 評論
-commit oneself to 使自己承擔… commit sb. to prison 把某人送進監獄; commit one’s idea to writing 把某人的想法寫下來; commit a matter to a committee 把某事交給委員會討論
-in common (和…)有共同之處,共用. be common to sb. 是與某人所共有的
-keep company with (=be friendly and go out together) 和…要好.
-
-實用會考片語 (3)
-compare...with ... 把…與…比較
-compare...to... 把…比作…
-by comparison 比較起來
-in comparison with (=in contrast to) 和…比起來
-compensate for (=give sth. to make up for) 補償,賠償,彌補 compensate sb. for sth. 賠償,彌補
-complain of (or about) 抱怨;訴苦;控告; complain about 抱怨某人或事情; complain to sb. about sth. (or sb.) 向某人抱怨…; complain (抱怨); complement (補充); compliment (恭維)
-comply with (=act in accordance with a demand, order, rule etc.) 遵守,依從
-conceive of (think of, imagine, consider) 想像,設想
-concentrate on (or upon) 集中,專心
-be concerned with (=about) 與…有關
-concern oneself about / with 關心
-in conclusion (=as the last thing) 最後一點; at the conclusion of 當…結束時;
-condemn sb. to 判決
-on condition that (=if) 以…為條件, 假如. in that = because 因為; now that = since 既然 ; for all that = although 儘管
-in / out of condition (=thoroughly healthy or fit / not fit) 健康狀況好/不好 . in good (bad) condition 處於良好(壞)狀態
-
-實用會考片語 (4)
-confess(to) (=admit a fault, crime, or sth. wrong) 承認,供認; confess to a crime 承認罪行.
-confide in (=to talk freely to sb. about one’s secret) 對…講真心話, 依賴
-in confidence 推心置腹地; with confidence 滿懷信心地; have confidence in 對…有信心
-confidence in sb. / sth. 對…的信賴
-be confident of 有信心; confidential 機密的
-confine...to... 把…限制在某範圍內
-confirm sb. in 使某人更堅定(信念等)
-conform to (=be in agreement with, comply with) 符合,遵照,遵守; 1) obey 服從; 2) observe; 3) comply with 照…辦; 4) keep to 遵循; 5) abide by 服從; 6) stick to 按…做
-be confronted with (=be brought face to face with) 面對,面臨
-congratulate sb. on 祝賀
-in connection with (=with regard to) 關於,
-be conscious of (=be aware of) 覺察,知道
-consent to (=give agreement to permission) 同意
-in consequence (=as a result) 結果
-in consequence of (=as a consequence of) 由於…的結果
-
-實用會考片語 (5)
-under consideration 在考慮中
-in consideration of (=in return for, on account of, because of ) 由於
-on no consideration (in no case) 無論如何也不
-take...into consideration (=take account of, take...into account) 考慮到, 把…考慮進去
-considerate (=thoughtful of the needs) 體貼的,考慮他人需要的, considerable 相當大的,值得考慮的
-consist of (=be composed of) 由…組成的. consist in 主要在於. consist with 符合,與…一致
-be consistent with (=be in agreement with) 與…一致. be consistent in 一貫的,
-consult sb. on/ about sth. 向…徵求…方面的意見, 就…向…請教
-to one’s heart’s content 盡情地,痛痛快快
-be content with (=be satisfied with) 滿足於 be content to do sth. 願意做某事
-contrary to (=in opposition to) 與…相反
-on the contrary 相反
-contrast...with 把…與…相對照(對照)
-in contrast to/with 和…形成對比 ; by contrast 對比之下
-contribute to 有助於
-
-實用會考片語 (6)
-under control (被)控制住 out of control 無法控制
-at one’s convenience (=where and when it suits one) 在方便的時間或地點 . be convenient to / for 對…方便
-convince sb. of (=cause sb. to believe or feel certain; to persuade sb.) 使某人確信, try to persuade sb. to do sth. 勸說某人做…
-cope with (=deal with, try to find a solution to) 應付, 處理
-in the corner (of) 在角落裏; on(at) the corner of a street 在街道拐彎處; round the corner 拐過彎; in a tight corner 陷入困境
-correspond (with) (=exchange letters regularly) 通信
-correspond to 相當於 . correspond with 符合,一致
-at all costs 不惜任何代價 . at the cost of 以…為代價
-a matter of course 理所當然的事
-as a matter of course 當然地, 自然地
-in (during) the course 在…過程中
-in due course (=without too much delay) 沒經過太久, 到一定時候
-on credit 賒購; with credit 以優異成績; to one’s credit 使某人感到光榮; do sb. credit 使…感到光榮
-be critical of 愛挑毛病的, 批評的
-cure sb. of+某種疾病 治好某人的疾病
-
-實用會考片語 (7)
-a danger to 對…的危險; be in danger(of) 處於…危險中; be out of danger 脫離危險
-to date (=so far, until now) 到目前為止
-out of date 過時的 ; up to date 新式的,時興的; date back to 可追溯到; date from 從某時期開始(有)
-deal with (=concern) 論及
-be in debt to sb. 欠…的債
-on the decline 在衰退中, 在減少中 in decline 下降; on the increase 在增加
-to one’s delight 令某人高興; to one’s regret 遺憾; sorrow 悲痛; relief 安心; distress 苦惱; shame 羞愧; surprise 驚奇; astonishment 驚奇;
-delight in (=take great pleasure in doing sth.) 喜歡, 取樂
-take (a) delight in 喜好…, 以…為樂
-demand sth. of sb. 向某人要求(非物質的)東西. demand sth. from sb. 向某人要求(物質的)東西
-in demand 有需求; on demand 受到要求時
-be dependent on 依靠
-deprive sb. of sth. 剝奪某人某物
-derive...from (=obtain...from) 從…取得,..由…來的. derive from (=come from) 起源於
-despair of (=lose all hope of) 絕望
-
-實用會考片語 (8)
-in despair 絕望
-despite (=in spite of) 不管, 儘管
-in detail 詳細地
-deviate from 偏離, 不按…辦
-on a diet 吃某種特殊飲食, 節食
-differ from...in 與…的區別在於…
-in difficulties... 有困難,處境困難,
-discharge sb. (from)...for (=dismiss sb. from a job for) 因…解雇,開除
-fall back (=retreat, turn back) 撤退; in disorder 慌亂地,狼狽不堪
-on display (=being shown publicly) 陳列
-dispose of (=get rid of ,throw away) 處理掉
-beyond dispute 不容爭議的,無可爭議
-in dispute 在爭議中
-in the distance 在遠處. make out 辨認出
-(be) distinct from ( = be different from) 與…截然不同
-
-實用會考片語 (9)
-distinguish between (=make or recognize differences) 辨別
-distinguish...from 把…與…區別開
-do away with (=get rid of; abolish; discard eliminate) 除去,廢除,取消; do away with (=kill) 殺掉, 鎮壓
-have...to do with 與…有關係
-without doubt (=undoubtedly) 無可置疑地
-in doubt (=in a condition of uncertainty) 對…表示疑惑
-be due to 是由於
-come off duty 下班
-go on duty 上班
-be on duty 值班, 值日, 在上班時
-be in duty bound to (do) (=be required by one’s job or esp. by conscience) 有義務(做)
-be eager for 想得到, 盼望
-by ear (=play music from memory without having seen it printed) 憑記憶,不看樂譜
-have an ear for (=have keen recognition of sounds esp. in music and language) 對..有鑒賞力
-a word in one’s ear 私房話, 秘密話
-
-實用會考片語 (10)
-on earth 究竟, 到底, 全然
-with ease (= easily) 容易, 不費力
-at (one’s) ease (= without worry or nervousness) 自在,不拘束
-put sb. at his / her ease (=free sb. from worry or nervousness) 使某人感到無拘束
-economize on (=save sth. instead of being wasteful) 節省
-have an effect on 對…有影響
-be in effect (=be in operation) 有效
-go into effect 生效. (近: come into effect; take effect; be brought into effect)
-in effect (=in fact, really) 實際上
-give effect to (=carry out) 實行,使…生效
-to no effect 不起作用,沒有取得任何效果
-(be) of no effect (=useless) 無效
-to the effect that 大意是…,主要內容是…
-to that effect 是那個意思的…
-emerge from (=appear, become known ) 出現, 暴露(問題. 意見等)
-
-實用會考片語 (11)
-place(or put, lay) an emphasis on 強調,把重點放在…上
-encourage sb. in 鼓勵; encourage sb. in his/her work 鼓勵某人工作; encourage sb. in his/her idleness 慫恿某人遊手好閒
-encourage sb. in ...with sth. 用…鼓勵某人做某事
-on end (=continuously) 連續地
-(be) at an end (=finished) 結束了
-no end of (=very many/much) 很多,大量
-in the end (=finally, eventually) 最終
-at one’s wit’s end (=not knowing what to do or to say) 無法可想, 智窮計盡
-end up with 以…而結束
-come to and end (=finish) 結束
-end in 以…為結束
-engage in 或 be engaged in 忙於, 從事
-enter for (=put the name on a list for) 報名參加
-enter into (=begin) 開始(談話,談判等)
-enter on / upon (=begin) 開始 (一個時代. 一種生涯. 一段任期等)
-
-實用會考片語 (12)
-be entitled to (=be given the right to do sth.) 有權…,有資格…
-be equal to 等於
-be/ feel equal to (=have enough strength, ability etc.) (某人)能勝任,能應付 on equal terms (=on and equal footing) 平等地
-be equipped with 裝備有,裝有
 
 112學測
 in no time 馬上;立刻
@@ -877,7 +695,7 @@ Amy and Bob, among others, showed up on Friday to support the baseball team of t
 (Amy和Bob等人星期五到場支持他們學校的棒球隊。)
 in short 總而言之;簡而言之
 We have a lot to go over in this meeting. In short, we are behind schedule, and the boss is not happy.
-(在這次會議上，我們有很多事要討論。 簡而言之，我們進度落後，而且老闆不太高興。)
+(在這次會議上，我們有很多事要討論。 簡而言EOF，我們進度落後，而且老闆不太高興。)
 at best 充S量;頂多
 The watch is worth $1000 at best.
 (這隻手錶頂多值1000元。)
@@ -983,7 +801,7 @@ Many readers can identify with the characters in the novel.
 (許多讀者對小說中的人物有共鳴。)
 above all 最重要的;尤其
 Above all, you should recognize your strengths and weaknesses.
-(最重要的是,你應該認清自己的優點和缺點。)
+(最重要的是,你應該認清自己的優點和 weaknesses。)
 as it appears 看起來
 Everything is not as it appears.
 (一切都不像它表面上看起來的那樣。)
@@ -1126,6 +944,975 @@ I just lost my job, and on top of that my car broke down on my way home.
 in place of 代替
 Maple syrup can also be used in place of sugar in many recipes.
 (在許多食譜中，楓糖漿也可以用來代替糖。)
+
+學測必考片語 1
+abide by (=be faithful to; obey) 忠於；遵守
+All members must abide by the rules of the club.
+(所有成員都必須遵守俱樂部的規則。)
+be absent from... 缺席，不在
+He was absent from class yesterday.
+(他昨天缺席了課程。)
+absence of mind (=being absent-minded) 心不在焉
+His mistake was due to absence of mind.
+(他的錯誤是出於心不在焉。)
+be absorbed in 全神貫注於…
+She was absorbed in her book and didn't hear me call.
+(她全神貫注地看書，沒聽到我叫她。)
+(be) abundant in (be rich in; be well supplied with) 富於,富有
+This area is abundant in natural resources.
+(這個地區富於自然資源。)
+access(to) (不可數名詞) 能接近,進入,了解
+Students need access to the library.
+(學生需要進入圖書館的權限。)
+by accident (=by chance, accidentally) 偶然地,意外
+I found this old photo by accident.
+(我偶然發現了這張舊照片。)
+Without accident (=safely) 安全地
+They arrived at their destination without accident.
+(他們平安抵達了目的地。)
+of one’s own accord (=without being asked; willingly; freely) 自願地，主動地
+He offered to help of his own accord.
+(他主動提出要幫忙。)
+in accord with 與…一致
+His actions are not in accord with his words.
+(他的言行不一。)
+out of one’s accord with 同…不一致
+This result is out of accord with our expectations.
+(這個結果與我們的預期不一致。)
+with one accord (=with everybody agreeing) 一致地
+They shouted "Yes!" with one accord.
+(他們一致地喊著「好！」。)
+
+學測必考片語 2
+in accordance with (=in agreement with) 依照,根據
+We acted in accordance with the instructions.
+(我們依照指示行動。)
+on one’s own account 為了某人自己的利益;自行負責;依靠自己
+He started the business on his own account.
+(他為了自己而開創了這項事業。)
+on account 賒帳
+I bought the furniture on account.
+(我賒帳買了這些家具。)
+on account of 因為
+The game was canceled on account of the rain.
+(因為下雨，比賽被取消了。)
+on no account 不論什麼原因也不
+On no account should you lend him money.
+(你絕不應該借錢給他。)
+take...into account (=consider) 把…考慮進去
+You must take his age into account.
+(你必須考慮到他的年齡。)
+give sb. an account of 說明,解釋(理由)
+He gave us a full account of his travels.
+(他向我們詳細說明了他的旅行。)
+account for (=give an explanation or reason for) 解釋,說明
+Can you account for your absence?
+(你能解釋你缺席的原因嗎？)
+accuse...of... (=charge...with) 指控,控告
+She accused him of stealing her watch.
+(她指控他偷了她的手錶。)
+be accustomed to (=be in the habit of, be used to) 習慣於
+I am accustomed to getting up early.
+(我習慣早起。)
+be acquainted with (=to have knowledge of) 了解; 熟悉
+Are you acquainted with the new manager?
+(你和新來的經理熟悉嗎？)
+
+學測必考片語 3
+act on 奉行,按照…行動
+You should act on your doctor's advice.
+(你應該遵照醫生的建議。)
+act as 扮演
+He acted as our guide during the trip.
+(旅途中他擔任我們的導遊。)
+act for 代理
+Our lawyer will act for us in this matter.
+(我們的律師將在這件事上代表我們。)
+adapt oneself to (=adjust oneself to) 使自己適應於
+You must adapt yourself to the new environment.
+(你必須使自己適應新環境。)
+adapt...(for) (=make sth. Suitable for a new need) 改編,改寫
+The novel was adapted for television.
+(這本小說被改編成電視劇。)
+in addition (=besides) 此外,又,加之
+He is smart, and in addition, he is diligent.
+(他很聰明，此外，他還很勤奮。)
+in addition to (=as well as, besides, other than) 除…之外
+In addition to his salary, he receives a bonus.
+(除了薪水，他還收到一筆獎金。)
+adhere to (=abide by, conform to, comply with) 堅持, 遵循
+We must adhere to the principles of justice.
+(我們必須堅持正義的原則。)
+adjacent (=next to, close to) 毗鄰的, 臨近的
+Their house is adjacent to the railway.
+(他們的房子緊鄰鐵路。)
+adjust..(to) (=change slightly) 調節; 適應
+She is trying to adjust to the new job.
+(她正試著適應新工作。)
+admit of (=be capable of, leave room for) …的可能, 留有…的餘地
+The situation admits of no delay.
+(情況不容許耽擱。)
+in advance (before in time) 預告,事先
+Please let me know in advance if you are coming.
+(如果你要來，請事先通知我。)
+
+學測必考片語 4
+to advantage 有利的,使優點更加突出地
+The new lighting shows off the painting to advantage.
+(新的照明使畫作的優點更加突顯。)
+have an advantage over 勝過
+Our team has an advantage over the other teams.
+(我們隊比其他隊更有優勢。)
+take advantage of (=make the best of, utilize) 利用
+You should take advantage of this opportunity.
+(你應該好好利用這個機會。)
+agree with 贊同(某人意見)
+I agree with you on this point.
+(在這一點上我同意你的看法。)
+agree to 同意
+He agreed to our proposal.
+(他同意了我們的提議。)
+in agreement (with) 同意, 一致
+I am in agreement with his decision.
+(我同意他的決定。)
+ahead of 在…之前, 超過…
+He finished the race ahead of all the other runners.
+(他領先所有其他選手完成了比賽。)
+ahead of time 提前
+She finished her homework ahead of time.
+(她提前完成了作業。)
+in the air 1)不肯定, 不具體 2)在謠傳中
+Our travel plans are still in the air.
+(我們的旅行計劃還沒確定。)
+above all (=especially, most important of all) 尤其是, 最重要的
+Above all, be true to yourself.
+(最重要的是，要忠於自己。)
+in all (=counting everyone or everything, altogether) 總共, 總計
+There are twenty students in all.
+(總共有二十名學生。)
+after all 畢竟,到底
+I knew he would succeed after all.
+(我早知道他終究會成功。)
+(not) at all 一點也不
+I am not tired at all.
+(我一點也不累。)
+all at once (=suddenly) 突然
+All at once, the lights went out.
+(燈突然都熄滅了。)
+once and for all 只此一次; 斷然地
+We need to solve this problem once and for all.
+(我們需要徹底解決這個問題。)
+first of all 首先
+First of all, I'd like to thank you for coming.
+(首先，我要感謝各位的蒞臨。)
+all in all 大體上說
+All in all, the party was a great success.
+(總的來說，這個派對非常成功。)
+be all in 累極了
+After the long hike, I was all in.
+(長途健行之後，我累癱了。)
+all but 幾乎
+The movie was all but finished when he arrived.
+(他到達時，電影幾乎都演完了。)
+
+學測必考片語 5
+allow for (=take into consideration) 考慮到, 估计到
+We must allow for bad weather when planning the trip.
+(我們計畫旅行時必須考慮到壞天氣。)
+amount to (=to be equal to) 總計, 等於
+The total cost amounts to $500.
+(總花費合計五百美元。)
+answer for (=be responsible for) 對…負責
+You will have to answer for your actions.
+(你必須為你的行為負責。)
+answer to (=conform to) 適合, 符合
+The description answers to that of the missing man.
+(這描述與失蹤男子的特徵相符。)
+be anxious about 為…焦急不安
+She is anxious about her son's health.
+(她為兒子的健康感到焦慮。)
+be anxious for 盼望
+We are all anxious for your success.
+(我們都盼望你成功。)
+apologize to sb. for sth. 為…向…道歉
+You should apologize to her for your rudeness.
+(你應該為你的粗魯向她道歉。)
+appeal to sb. for sth. 為某事向某人呼籲
+They appealed to the government for help.
+(他們向政府呼籲尋求幫助。)
+appeal to sb. 對某人有吸引力
+This music appeals to young people.
+(這種音樂很吸引年輕人。)
+apply to sb. for sth. 為…向…申請
+He applied to the bank for a loan.
+(他向銀行申請貸款。)
+apply for 申請
+I decided to apply for the job.
+(我決定申請這份工作。)
+apply to 適用
+These rules apply to everyone.
+(這些規則適用於每個人。)
+approve of (=consent to) 贊成
+Her parents do not approve of her marriage.
+(她的父母不贊成她的婚事。)
+approve vt. 批准
+The committee approved the plan.
+(委員會批准了這項計畫。)
+
+學測必考片語 6
+arise from (=be caused by) 由…引起
+Many problems arise from misunderstanding.
+(許多問題源於誤解。)
+arrange for sb/sth. to do sth. 安排…做…
+We have arranged for a car to pick you up.
+(我們已經安排了一輛車來接你。)
+arrive at 到達某地(小地方); 得出,作出
+We arrived at the station just in time.
+(我們及時趕到了車站。)
+arrive in 到達某地(大地方)
+He will arrive in Taipei tomorrow.
+(他明天將抵達台北。)
+be ashamed of (=feel shame for) 以…為羞恥
+You should be ashamed of your behavior.
+(你應該為你的行為感到羞恥。)
+assure sb. of sth. (=try to cause to believe) 向…保證, 使…確信
+I assure you of my full support.
+(我向你保證我會全力支持。)
+attach(to) (=to fix, fasten; join) 縛, 係 ,結
+Please attach a recent photo to your application.
+(請在你的申請表上貼一張近照。)
+make an attempt at doing sth. (to do sth.) 試圖做…
+He made an attempt to pass the exam.
+(他試圖通過考試。)
+attend to (=give one’s attention) 注意, 照顧
+Please attend to what I am saying.
+(請注意聽我說的話。)
+attend on(upon) (=wait upon, serve) 侍候, 照料
+Several nurses attended on the patient.
+(好幾位護士在照料那位病人。)
+attitude to/ toward …對…的態度. 看法
+What is your attitude toward this issue?
+(你對這個議題的態度是什麼？)
+attribute...to... (=to believe sth. to be the result of...) 把..歸因於..
+He attributed his success to hard work.
+(他把他的成功歸因於努力。)
+
+學測必考片語 7
+on the average (=on average, on an average) 平均
+On the average, I spend two hours a day reading.
+(平均來說，我每天花兩小時閱讀。)
+(be) aware of (=be conscious of) 意識到,知道
+I was not aware of the danger.
+(我沒有意識到危險。)
+at the back of (=behind) 在…後面
+The garden is at the back of the house.
+(花園在房子的後面。)
+in the back of 在…後部(裏面)
+He was sitting in the back of the classroom.
+(他坐在教室的後排。)
+on the back of 在…後部(外面)
+There is a label on the back of the box.
+(盒子背面有一張標籤。)
+be on one’s back (=be ill in bed) 臥病不起
+He has been on his back for a month.
+(他已經臥病一個月了。)
+at one’s back (=supporting or favoring sb.) 支援,維護
+With a strong team at his back, he won the election.
+(有強大團隊的支持，他贏得了選舉。)
+turn one’s back on sb. (=ignore) 不理睬(某人),背棄,拋棄
+He turned his back on his old friends.
+(他背棄了他的老朋友們。)
+behind one’s back 背著某人(說壞話)
+They were talking about me behind my back.
+(他們在我背後談論我。)
+be based on / upon 基於
+The story is based on real events.
+(這個故事是基於真實事件。)
+on the basis of 根據…,在…基礎上
+He was chosen on the basis of his experience.
+(他憑藉經驗被選中。)
+beat...at 在…運動項目上打贏
+I beat him at chess.
+(我下棋贏了他。)
+
+學測必考片語 8
+begin with 以…開始
+The program began with a song.
+(節目以一首歌開始。)
+to begin with (=first of all) 首先,第一
+To begin with, you need to buy the ingredients.
+(首先，你需要購買食材。)
+on behalf of (=as the representative of) 以…名義
+I am speaking on behalf of my colleagues.
+(我代表我的同事發言。)
+believe in (=have faith or trust in) 相信,依賴,信仰
+Do you believe in ghosts?
+(你相信有鬼嗎？)
+benefit (from) 受益,得到好處
+We all benefit from clean air.
+(我們都受益於乾淨的空氣。)
+for the benefit of 為了…的利益(好處)
+He worked for the benefit of the poor.
+(他為窮人的利益而工作。)
+for the better 好轉
+His health has changed for the better.
+(他的健康狀況已好轉。)
+get the better of (=defeat sb.) 打敗,勝過
+His curiosity got the better of him and he opened the box.
+(他的好奇心戰勝了他，他打開了盒子。)
+by birth 在出生上,論出身,按血統
+He is a prince by birth.
+(他出身於王子家庭。)
+at birth 在出生時
+The baby weighed 3 kilograms at birth.
+(嬰兒出生時體重為三公斤。)
+give birth to 出生
+She gave birth to a healthy baby girl.
+(她生下一個健康的女嬰。)
+blame sb. for sth. 因…責備某人
+Don't blame me for your mistake.
+(不要因為你的錯誤而責備我。)
+blame sth. on sb. 把…推在某人身上
+He blamed the accident on his friend.
+(他把事故歸咎於他的朋友。)
+in blossom 開花(指樹木)
+The cherry trees are in blossom.
+(櫻花樹盛開了。)
+
+學測必考片語 9
+on board 到船上,在船上,上火車或飛機
+All passengers are on board.
+(所有乘客都已登機。)
+boast of (or about) 吹噓
+He is always boasting of his achievements.
+(他總是在吹噓自己的成就。)
+out of breath 喘不過氣來
+I was out of breath after running up the stairs.
+(跑上樓梯後我喘不過氣來。)
+in brief (=in as few words as possible) 簡言之
+In brief, the plan was a disaster.
+(簡言之，這個計畫是個災難。)
+in bulk 成批地,不散裝的
+We buy food in bulk to save money.
+(我們大量購買食物以省錢。)
+take the floor 起立發言
+She took the floor to ask a question.
+(她起立發問。)
+on business 出差辦事
+He has gone to Japan on business.
+(他去日本出差了。)
+be busy with sth. 忙於某事
+He is busy with his homework.
+(他忙於做作業。)
+be busy doing sth. 忙於做某事
+She is busy cooking dinner.
+(她正忙著做晚餐。)
+last but one 倒數第二
+My name was the last but one on the list.
+(我的名字在名單上是倒數第二個。)
+but for (=without) 要不是
+But for your help, I would have failed.
+(要不是你的幫助，我就失敗了。)
+
+學測必考片語 10
+buy sth. for...money 用多少錢買
+I bought this watch for $100.
+(我花了一百美元買了這隻手錶。)
+be capable of 能夠,有能力
+He is capable of solving the problem.
+(他有能力解決這個問題。)
+be capable of being +過去分詞 是能夠被…的
+The problem is capable of being solved.
+(這個問題是能夠被解決的。)
+in any case (=whatever happens; anyhow) 無論如何
+In any case, I will support you.
+(無論如何，我都會支持你。)
+in case (=for fear that) 萬一
+Take an umbrella in case it rains.
+(帶把傘，以防萬一下雨。)
+in case of (=in the event of) 如果發生…萬一
+In case of fire, use the emergency exit.
+(如遇火災，請使用緊急出口。)
+in no case 在任何情況下都不
+In no case should you cheat in the exam.
+(任何情況下你都不應在考試中作弊。)
+be cautious of 謹防
+You should be cautious of strangers.
+(你應該提防陌生人。)
+center one’s attention on (=focus one’s attention on) 把某人的注意力集中在…上
+He centered his attention on his studies.
+(他把注意力集中在學業上。)
+be certain of (=be sure of) 有把握,一定
+I am certain of his success.
+(我確信他會成功。)
+for certain (=for sure) 肯定地,有把握地
+He will come back for certain.
+(他肯定會回來。)
+
+學測必考片語 11
+by chance (=accidentally, by accident) 偶然
+I met her by chance at the station.
+(我在車站偶然遇見了她。)
+for a change 換換環境(花樣等)
+Let's eat out for a change.
+(我們出去吃飯換換口味吧。)
+charge sb. with ... 控告某人犯有…
+He was charged with murder.
+(他被控告犯有謀殺罪。)
+in charge of (=responsible for) 負責(某事)
+She is in charge of the marketing department.
+(她負責行銷部門。)
+in the charge of …由…管
+The child is in the charge of his aunt.
+(這個孩子由他的姑姑照管。)
+take charge of (=to be or become responsible for) 負責管理(照顧)
+She took charge of the project.
+(她開始負責這個專案。)
+charge...for 因…索取(費用)
+How much do you charge for a haircut?
+(理髮收費多少？)
+round the clock (=all day and all night) 晝夜不停地
+The factory operates round the clock.
+(這家工廠晝夜不停地運作。)
+comment on 評論
+He refused to comment on the situation.
+(他拒絕對此情況發表評論。)
+commit oneself to 使自己承擔…
+He committed himself to finishing the work on time.
+(他保證自己會按時完成工作。)
+commit sb. to prison 把某人送進監獄
+The judge committed him to prison for five years.
+(法官判他入獄五年。)
+in common (和…)有共同之處,共用
+We have nothing in common.
+(我們沒有任何共同之處。)
+be common to sb. 是與某人所共有的
+This problem is common to all of us.
+(這個問題是我們大家所共有的。)
+
+學測必考片語 12
+keep company with (=be friendly with) 和…要好
+He keeps company with some bad people.
+(他與一些壞人為伍。)
+compare...with ... 把…與…比較
+We compared the copy with the original.
+(我們將副本與原件進行了比較。)
+compare...to... 把…比作…
+The poet compared her eyes to stars.
+(詩人把她的眼睛比作星星。)
+by comparison 比較起來
+By comparison, this one is much better.
+(相較之下，這個好多了。)
+in comparison with (=in contrast to) 和…比起來
+In comparison with his brother, he is very tall.
+(和他哥哥比起來，他很高。)
+compensate for (=make up for) 補償,賠償,彌補
+Nothing can compensate for the loss of his child.
+(什麼都無法彌補他失去孩子的痛苦。)
+compensate sb. for sth. 賠償,彌補
+The company compensated him for his injuries.
+(公司賠償了他的傷。)
+complain of (or about) 抱怨;訴苦;控告
+She often complains of headaches.
+(她經常抱怨頭痛。)
+complain to sb. about sth. (or sb.) 向某人抱怨…
+He complained to the manager about the poor service.
+(他向經理抱怨服務太差。)
+comply with (=act in accordance with) 遵守,依從
+You must comply with the rules.
+(你必須遵守規則。)
+conceive of (think of, imagine, consider) 想像,設想
+I cannot conceive of him doing such a thing.
+(我無法想像他會做這樣的事。)
+concentrate on (or upon) 集中,專心
+I need to concentrate on my work.
+(我需要專心工作。)
+
+學測必考片語 13
+be concerned with (=about) 與…有關
+This book is concerned with the history of Asia.
+(這本書是關於亞洲歷史的。)
+concern oneself about / with 關心
+He concerns himself with every detail of the project.
+(他關心專案的每一個細節。)
+in conclusion (=as the last thing) 最後一點
+In conclusion, I would like to thank everyone.
+(最後，我要感謝大家。)
+at the conclusion of 當…結束時
+He spoke at the conclusion of the meeting.
+(他在會議結束時發了言。)
+condemn sb. to 判決
+The prisoner was condemned to death.
+(那個囚犯被判處死刑。)
+on condition that (=if) 以…為條件, 假如
+I'll lend you the money on condition that you pay it back next week.
+(我借錢給你，條件是你下週要還。)
+in / out of condition 健康狀況好/不好
+He is in good condition for his age.
+(以他的年紀來說，他身體狀況很好。)
+confess(to) (=admit a fault, crime) 承認,供認
+He confessed to stealing the money.
+(他承認偷了錢。)
+confide in (=to talk freely to sb. about one’s secret) 對…講真心話, 依賴
+She always confides in her best friend.
+(她總是對她最好的朋友說真心話。)
+in confidence 推心置腹地
+I told him the secret in confidence.
+(我私下把秘密告訴了他。)
+with confidence 滿懷信心地
+He spoke with confidence.
+(他滿懷信心地發言。)
+have confidence in 對…有信心
+I have confidence in his ability.
+(我對他的能力有信心。)
+
+學測必考片語 14
+be confident of 有信心
+I am confident of success.
+(我對成功充滿信心。)
+confine...to... 把…限制在某範圍內
+Please confine your remarks to the topic.
+(請將您的發言限制在主題範圍內。)
+confirm sb. in 使某人更堅定(信念等)
+His success confirmed him in his belief.
+(他的成功使他更堅定了自己的信念。)
+conform to (=be in agreement with, comply with) 符合,遵照,遵守
+All students must conform to the school rules.
+(所有學生都必須遵守校規。)
+be confronted with (=be brought face to face with) 面對,面臨
+We are confronted with a difficult choice.
+(我們面臨一個困難的選擇。)
+congratulate sb. on 祝賀
+I congratulated him on his graduation.
+(我祝賀他畢業。)
+in connection with (=with regard to) 關於
+I am writing to you in connection with your job application.
+(我寫信給你是關於你求職申請的事。)
+be conscious of (=be aware of) 覺察,知道
+He was not conscious of my presence.
+(他沒有察覺到我的存在。)
+consent to (=give agreement to permission) 同意
+Her father would not consent to her marriage.
+(她的父親不同意她的婚事。)
+in consequence (=as a result) 結果
+He was lazy, and in consequence, he failed the exam.
+(他很懶惰，結果考試不及格。)
+
+學測必考片語 15
+in consequence of (=as a consequence of) 由於…的結果
+He lost his job in consequence of his carelessness.
+(他因為粗心而丟了工作。)
+under consideration 在考慮中
+Your proposal is under consideration.
+(你的提議正在考慮中。)
+in consideration of (=in return for, on account of) 由於
+He was given a bonus in consideration of his hard work.
+(考慮到他的辛勤工作，他得到了一筆獎金。)
+on no consideration (in no case) 無論如何也不
+On no consideration will I agree to your demand.
+(我無論如何也不會同意你的要求。)
+take...into consideration (=take account of) 考慮到, 把…考慮進去
+We must take all factors into consideration.
+(我們必須把所有因素都考慮進去。)
+considerate (=thoughtful) 體貼的,考慮他人需要的
+It was very considerate of you to help me.
+(你幫我真是太體貼了。)
+consist of (=be composed of) 由…組成的
+The team consists of ten members.
+(這個隊由十名隊員組成。)
+consist in 主要在於
+Happiness consists in contentment.
+(幸福在於滿足。)
+consist with 符合,與…一致
+His actions do not consist with his words.
+(他言行不一。)
+be consistent with (=be in agreement with) 與…一致
+Your story is not consistent with the facts.
+(你的說法與事實不符。)
+be consistent in 一貫的
+He is consistent in his political views.
+(他一貫堅持自己的政治觀點。)
+consult sb. on/ about sth. 向…徵求…方面的意見, 就…向…請教
+You should consult your doctor about your health.
+(你應該就你的健康問題諮詢醫生。)
+to one’s heart’s content 盡情地,痛痛快快
+The children played in the park to their heart's content.
+(孩子們在公園裡盡情地玩耍。)
+
+學測必考片語 16
+be content with (=be satisfied with) 滿足於
+He is content with his current salary.
+(他對目前的薪水很滿意。)
+be content to do sth. 願意做某事
+I am content to stay at home and read.
+(我願意待在家裡讀書。)
+contrary to (=in opposition to) 與…相反
+Contrary to my expectations, the movie was very boring.
+(與我的預期相反，這部電影非常無聊。)
+on the contrary 相反
+I'm not sick; on the contrary, I feel great.
+(我沒有生病；相反地，我感覺好極了。)
+contrast...with 把…與…相對照(對照)
+Let's contrast his early work with his later work.
+(讓我們把他的早期作品和晚期作品對照一下。)
+in contrast to/with 和…形成對比
+In contrast to the city, the countryside is very quiet.
+(與城市相比，鄉村非常安靜。)
+by contrast 對比之下
+Tom is very active. By contrast, his brother is quite lazy.
+(湯姆很活躍。相比之下，他弟弟很懶。)
+contribute to 有助於
+Exercise contributes to good health.
+(運動有助於健康。)
+under control (被)控制住
+The fire is now under control.
+(火勢現已得到控制。)
+out of control 無法控制
+The car went out of control and crashed.
+(汽車失控撞毀了。)
+at one’s convenience 在方便的時間或地點
+Please call me at your convenience.
+(請在你方便的時候打電話給我。)
+be convenient to / for 對…方便
+The new subway line is convenient for me.
+(新的地鐵線對我很方便。)
+convince sb. of (=cause sb. to believe) 使某人確信
+He convinced me of his innocence.
+(他說服我相信他是無辜的。)
+cope with (=deal with) 應付, 處理
+She has to cope with a lot of stress in her job.
+(她工作中必須應對很大的壓力。)
+
+學測必考片語 17
+in the corner (of) 在角落裏
+The table is in the corner of the room.
+(桌子在房間的角落裡。)
+on(at) the corner of a street 在街道拐彎處
+There is a post office on the corner of the street.
+(街道拐角處有一家郵局。)
+round the corner 拐過彎; 即將來臨
+The bus stop is just round the corner.
+(公車站就在拐角處。)
+in a tight corner 陷入困境
+His lie put him in a tight corner.
+(他的謊言使他陷入困境。)
+correspond (with) (=exchange letters) 通信
+They have been corresponding with each other for years.
+(他們已經通信多年。)
+correspond to 相當於
+The result corresponds to our prediction.
+(結果與我們的預測相符。)
+correspond with 符合,一致
+Your actions must correspond with your words.
+(你必須言行一致。)
+at all costs 不惜任何代價
+We must win the game at all costs.
+(我們必須不惜一切代價贏得比賽。)
+at the cost of 以…為代價
+He saved the child at the cost of his own life.
+(他犧牲自己的生命救了那個孩子。)
+a matter of course 理所當然的事
+It's a matter of course that you should help your parents.
+(你幫助父母是理所當然的事。)
+as a matter of course 當然地, 自然地
+He takes his success as a matter of course.
+(他把自己的成功視為理所當然。)
+in (during) the course 在…過程中
+In the course of the discussion, he raised a new point.
+(在討論過程中，他提出了一個新觀點。)
+in due course (=without too much delay) 到一定時候
+You will receive the payment in due course.
+(你到時候就會收到付款。)
+on credit 賒購
+He bought a new car on credit.
+(他賒購了一輛新車。)
+to one’s credit 使某人感到光榮
+It is to his credit that he admitted his mistake.
+(他承認了錯誤，這值得稱讚。)
+be critical of 愛挑毛病的, 批評的
+He is always critical of his colleagues.
+(他總是對同事百般挑剔。)
+
+學測必考片語 18
+cure sb. of+某種疾病 治好某人的疾病
+The doctor cured him of his illness.
+(醫生治好了他的病。)
+a danger to 對…的危險
+Smoking is a danger to your health.
+(吸煙對你的健康是一種威脅。)
+be in danger(of) 處於…危險中
+He is in danger of losing his job.
+(他有失去工作的危險。)
+be out of danger 脫離危險
+The patient is now out of danger.
+(病人現在脫離危險了。)
+to date (=so far, until now) 到目前為止
+This is his best work to date.
+(這是他迄今為止最好的作品。)
+out of date 過時的
+This dictionary is out of date.
+(這本詞典過時了。)
+up to date 新式的,時興的
+I need to get an up-to-date report.
+(我需要一份最新的報告。)
+date back to 可追溯到
+The castle dates back to the 15th century.
+(這座城堡可追溯到十五世紀。)
+date from 從某時期開始(有)
+This tradition dates from the Middle Ages.
+(這個傳統始於中世紀。)
+deal with (=concern) 論及
+This book deals with the problem of pollution.
+(這本書是關於污染問題的。)
+be in debt to sb. 欠…的債
+I am in debt to him for $100.
+(我欠他一百美元。)
+on the decline 在衰退中, 在減少中
+The company's profits are on the decline.
+(公司的利潤正在下降。)
+to one’s delight 令某人高興
+To my delight, she accepted my invitation.
+(令我高興的是，她接受了我的邀請。)
+delight in (=take great pleasure in doing sth.) 喜歡, 取樂
+He delights in teasing his little sister.
+(他喜歡逗他的小妹妹。)
+take (a) delight in 喜好…, 以…為樂
+She takes delight in helping others.
+(她以助人為樂。)
+
+學測必考片語 19
+demand sth. of sb. 向某人要求(非物質的)東西
+The teacher demands respect from the students.
+(老師要求學生尊敬他。)
+demand sth. from sb. 向某人要求(物質的)東西
+The kidnappers demanded $1 million from the family.
+(綁匪向家屬索要一百萬美元。)
+in demand 有需求
+Good engineers are always in demand.
+(優秀的工程師總是供不應求。)
+on demand 受到要求時
+The information is available on demand.
+(這些資訊可隨時索取。)
+be dependent on 依靠
+The child is dependent on his parents.
+(這個孩子依靠他的父母。)
+deprive sb. of sth. 剝奪某人某物
+The war deprived them of their homes.
+(戰爭剝奪了他們的家園。)
+derive...from (=obtain...from) 從…取得,..由…來的
+He derives great pleasure from his hobbies.
+(他從愛好中獲得極大的樂趣。)
+derive from (=come from) 起源於
+This word derives from Latin.
+(這個詞起源於拉丁語。)
+despair of (=lose all hope of) 絕望
+He despaired of ever finding his lost wallet.
+(他對找回丟失的錢包絕望了。)
+in despair 絕望
+She was in despair after losing her job.
+(失業後她陷入了絕望。)
+despite (=in spite of) 不管, 儘管
+He went out despite the heavy rain.
+(儘管下著大雨，他還是出去了。)
+in detail 詳細地
+He explained the plan in detail.
+(他詳細地解釋了這個計畫。)
+deviate from 偏離, 不按…辦
+You must not deviate from the agreed route.
+(你絕不能偏離既定路線。)
+
+學測必考片語 20
+on a diet 吃某種特殊飲食, 節食
+I'm on a diet to lose weight.
+(我正在節食減肥。)
+differ from...in 與…的區別在於…
+He differs from his brother in personality.
+(他和他兄弟在個性上不同。)
+in difficulties... 有困難,處境困難
+She is in financial difficulties.
+(她陷入了財務困境。)
+discharge sb. (from)...for (=dismiss sb.) 因…解雇,開除
+He was discharged from the army for bad conduct.
+(他因行為不端被軍隊開除。)
+in disorder 慌亂地,狼狽不堪
+His room is always in disorder.
+(他的房間總是亂七八糟。)
+on display (=being shown publicly) 陳列
+The new products are on display.
+(新產品正在展出。)
+dispose of (=get rid of ,throw away) 處理掉
+You should dispose of that old car.
+(你應該處理掉那輛舊車。)
+beyond dispute 不容爭議的,無可爭議
+It is beyond dispute that he is the best player.
+(他是最好的球員，這點不容爭議。)
+in dispute 在爭議中
+The ownership of the land is in dispute.
+(這塊土地的所有權尚在爭議中。)
+in the distance 在遠處
+We saw a ship in the distance.
+(我們看到遠處有一艘船。)
+
+學測必考片語 21
+(be) distinct from ( = be different from) 與…截然不同
+This new model is distinct from the previous one.
+(這個新型號與前一個截然不同。)
+distinguish between (=make differences) 辨別
+It's hard to distinguish between the two twins.
+(很難分辨這對雙胞胎。)
+distinguish...from 把…與…區別開
+Can you distinguish this word from the others?
+(你能把這個詞和其他詞區別開嗎？)
+do away with (=get rid of; abolish; discard) 除去,廢除,取消
+They want to do away with the old traditions.
+(他們想廢除舊傳統。)
+have...to do with 與…有關係
+What does this have to do with me?
+(這跟我有什麼關係？)
+without doubt (=undoubtedly) 無可置疑地
+Without doubt, he is the best person for the job.
+(毫無疑問，他是這份工作的最佳人選。)
+in doubt (=in a condition of uncertainty) 對…表示疑惑
+If you are in doubt, ask for help.
+(如果你有疑問，就尋求幫助。)
+be due to 是由於
+The accident was due to his carelessness.
+(事故是由於他的粗心造成的。)
+come off duty 下班
+I come off duty at 5 p.m.
+(我下午五點下班。)
+go on duty 上班
+The new guard goes on duty at 10 p.m.
+(新來的警衛晚上十點上班。)
+
+學測必考片語 22
+be on duty 值班, 值日, 在上班時
+He is on duty tonight.
+(他今晚值班。)
+be in duty bound to (do) (=be required by conscience) 有義務(做)
+I feel in duty bound to tell him the truth.
+(我覺得我有義務告訴他真相。)
+be eager for 想得到, 盼望
+He is eager for news of his family.
+(他渴望得到家人的消息。)
+by ear (=play music from memory) 憑記憶,不看樂譜
+He can play any tune by ear.
+(他能憑記憶彈奏任何曲子。)
+have an ear for (=have keen recognition of sounds) 對..有鑒賞力
+She has a good ear for music.
+(她對音樂有很好的鑒賞力。)
+a word in one’s ear 私房話, 秘密話
+He had a word in her ear before she left.
+(在她離開前，他跟她說了句悄悄話。)
+on earth 究竟, 到底, 全然
+What on earth are you doing?
+(你到底在做什麼？)
+with ease (= easily) 容易, 不費力
+She passed the exam with ease.
+(她輕鬆通過了考試。)
+at (one’s) ease (= without worry or nervousness) 自在,不拘束
+He felt at ease among his friends.
+(他在朋友當中感到很自在。)
+put sb. at his / her ease (=free sb. from worry) 使某人感到無拘束
+His friendly manner put everyone at their ease.
+(他友善的態度讓大家感到很自在。)
+
+學測必考片語 23
+economize on (=save sth.) 節省
+We need to economize on electricity.
+(我們需要節約用電。)
+have an effect on 對…有影響
+His speech had a great effect on the audience.
+(他的演講對聽眾有很大的影響。)
+be in effect (=be in operation) 有效
+The new law is now in effect.
+(新法律現在生效了。)
+go into effect 生效
+The law will go into effect next month.
+(該法律將於下個月生效。)
+in effect (=in fact, really) 實際上
+In effect, they have already made the decision.
+(實際上，他們已經做出了決定。)
+give effect to (=carry out) 實行,使…生效
+We must give effect to the new policy.
+(我們必須執行這項新政策。)
+to no effect 不起作用,沒有取得任何效果
+He tried to persuade her, but to no effect.
+(他試圖說服她，但沒有效果。)
+(be) of no effect (=useless) 無效
+The medicine was of no effect.
+(這藥無效。)
+to the effect that 大意是…,主要內容是…
+He sent a letter to the effect that he was resigning.
+(他寄來一封信，大意是說他要辭職。)
+to that effect 是那個意思的…
+He said something to that effect.
+(他説了那樣意思的話。)
+
+Indented line
+學測必考片語 24
+emerge from (=appear, become known ) 出現, 暴露
+The truth finally emerged from the investigation.
+(真相在調查後終於浮出水面。)
+place(or put, lay) an emphasis on 強調,把重點放在…上
+The school places great emphasis on language learning.
+(這所學校非常重視語言學習。)
+encourage sb. in 鼓勵
+We should encourage him in his studies.
+(我們應該鼓勵他學習。)
+on end (=continuously) 連續地
+It rained for three days on end.
+(雨連續下了三天。)
+(be) at an end (=finished) 結束了
+Our long journey is at an end.
+(我們的長途旅行結束了。)
+no end of (=very many/much) 很多,大量
+He has no end of good ideas.
+(他有數不完的好主意。)
+in the end (=finally, eventually) 最終
+In the end, he decided to go abroad.
+(最後，他決定出國。)
+at one’s wit’s end (=not knowing what to do) 無法可想, 智窮計盡
+I'm at my wit's end trying to solve this problem.
+(我為了解決這個問題而絞盡腦汁。)
+end up with 以…而結束
+If you keep spending money like this, you'll end up with nothing.
+(如果你繼續這樣花錢，最後會一無所有。)
+
+學測必考片語 25
+come to an end (=finish) 結束
+The meeting finally came to an end.
+(會議終於結束了。)
+end in 以…為結束
+The game ended in a draw.
+(比賽以平局告終。)
+engage in 或 be engaged in 忙於, 從事
+He is engaged in writing a new book.
+(他正忙著寫一本新書。)
+enter for (=put the name on a list for) 報名參加
+Are you going to enter for the competition?
+(你會報名參加比賽嗎？)
+enter into (=begin) 開始(談話,談判等)
+They refused to enter into any negotiations.
+(他們拒絕進行任何談判。)
+enter on / upon (=begin) 開始 (一個時代. 一種生涯. 一段任期等)
+He entered upon a new career as a writer.
+(他開始了作為作家的新生涯。)
+be entitled to (=be given the right to do sth.) 有權…,有資格…
+Everyone is entitled to a fair trial.
+(每個人都有權獲得公平的審判。)
+be equal to 等於
+His strength is equal to the task.
+(他的能力足以勝任這項任務。)
+be/ feel equal to (=have enough strength, ability etc.) (某人)能勝任,能應付
+I don't feel equal to such a difficult task.
+(我覺得我無法勝任這麼困難的任務。)
+on equal terms (=on and equal footing) 平等地
+We compete on equal terms with other companies.
+(我們與其他公司在平等的基礎上競爭。)
+be equipped with 裝備有,裝有
+The car is equipped with air conditioning.
+(這輛車配有空調。)
 `;
 
         // 應用程式狀態
@@ -1183,7 +1970,8 @@ Maple syrup can also be used in place of sugar in many recipes.
                 // --- 檢查是否為標題 ---
                 // 標題 1: 111學測, 110指考
                 // 標題 2: 實用會考片語 ...
-                if (/^\d{3}(學測|指考)$/.test(line) || line.startsWith('實用會考片語')) {
+                // 標題 3: 學測必考片語 1 (新增的檢查)
+                if (/^\d{3}(學測|指考)$/.test(line) || line.startsWith('實用會考片語') || /^學測必考片語 \d+$/.test(line)) {
                     // 如果是標題, 結束上一張卡片 (如果有的話)
                     if (cardStep !== 0 && currentCard.phrase) {
                         data[currentYearKey].push(currentCard);
@@ -1534,8 +2322,7 @@ Maple syrup can also be used in place of sugar in many recipes.
                 <tr>
                     <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">片語</th>
                     <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">中文定義</th>
-                    <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">英文例句</th>
-                    <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">中文例句</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">例句</th>
                 </tr>
             `;
             table.appendChild(thead);
@@ -1546,11 +2333,18 @@ Maple syrup can also be used in place of sugar in many recipes.
             
             phrases.forEach(card => {
                 const tr = document.createElement('tr');
+                
+                // 檢查例句是否存在，不存在則給予空字串
+                const exampleEn = card.example_en || '';
+                const exampleZh = card.example_zh || '';
+
                 tr.innerHTML = `
-                    <td class="px-6 py-4 whitespace-normal text-sm font-medium text-blue-600">${card.phrase}</td>
-                    <td class="px-6 py-4 whitespace-normal text-sm text-slate-700">${card.definition}</td>
-                    <td class="px-6 py-4 whitespace-normal text-sm text-slate-700">${card.example_en}</td>
-                    <td class="px-6 py-4 whitespace-normal text-sm text-slate-700">${card.example_zh}</td>
+                    <td class="px-6 py-4 whitespace-normal text-sm font-medium text-blue-600 align-top">${card.phrase}</td>
+                    <td class="px-6 py-4 whitespace-normal text-sm text-slate-700 align-top">${card.definition}</td>
+                    <td class="px-6 py-4 whitespace-normal text-sm text-slate-700 align-top">
+                        <p class="mb-1">${exampleEn}</p>
+                        <p class="text-slate-500">${exampleZh}</p>
+                    </td>
                 `;
                 tbody.appendChild(tr);
             });
@@ -1669,26 +2463,38 @@ Maple syrup can also be used in place of sugar in many recipes.
         // 點擊 Canvas 翻轉卡片
         canvas.addEventListener('click', () => {
             if (currentPhrases.length > 0) {
-                isFlipped = !isFlipped;
-                drawCard();
+                canvas.classList.add('is-fading'); // 開始淡出
+                setTimeout(() => {
+                    isFlipped = !isFlipped;
+                    drawCard(); // 重新繪製不可見的卡片
+                    canvas.classList.remove('is-fading'); // 開始淡入
+                }, 150); // 配合 CSS transition
             }
         });
 
         // 點擊下一個
         nextBtn.addEventListener('click', () => {
             if (currentPhrases.length > 0) {
-                currentIndex = (currentIndex + 1) % currentPhrases.length;
-                isFlipped = false;
-                updatePracticeUI();
+                canvas.classList.add('is-fading'); // 開始淡出
+                setTimeout(() => {
+                    currentIndex = (currentIndex + 1) % currentPhrases.length;
+                    isFlipped = false;
+                    updatePracticeUI(); // 這会呼叫 drawCard()
+                    canvas.classList.remove('is-fading'); // 開始淡入
+                }, 150); // 配合 CSS transition
             }
         });
 
         // 點擊上一個
         prevBtn.addEventListener('click', () => {
             if (currentPhrases.length > 0) {
-                currentIndex = (currentIndex - 1 + currentPhrases.length) % currentPhrases.length;
-                isFlipped = false;
-                updatePracticeUI();
+                canvas.classList.add('is-fading'); // 開始淡出
+                setTimeout(() => {
+                    currentIndex = (currentIndex - 1 + currentPhrases.length) % currentPhrases.length;
+                    isFlipped = false;
+                    updatePracticeUI(); // 這会呼叫 drawCard()
+                    canvas.classList.remove('is-fading'); // 開始淡入
+                }, 150); // 配合 CSS transition
             }
         });
 
