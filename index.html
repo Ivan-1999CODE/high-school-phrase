@@ -1,1 +1,2530 @@
 
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>高中英文片語練習 (Canvas版)</title>
+    <!-- 引入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入 Inter 字體 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        /* 設置基本字體 */
+        body {
+            font-family: 'Inter', 'Noto Sans TC', sans-serif;
+            background-color: #f1f5f9; /* bg-slate-100 */
+        }
+        /* 畫布的 CSS */
+        canvas {
+            width: 100%;
+            height: auto;
+            aspect-ratio: 800 / 500;
+            cursor: pointer;
+            /* 新增：為淡入淡出增加過場效果 */
+            transition: opacity 0.15s ease-in-out;
+        }
+        /* 新增：淡出時的狀態 */
+        canvas.is-fading {
+            opacity: 0;
+        }
+        /* 側邊欄年份按鈕樣式 */
+        .year-btn {
+            width: 100%;
+            text-align: left;
+            padding: 0.75rem 1rem; /* 12px 16px */
+            border-radius: 0.5rem; /* 8px */
+            font-weight: 500;
+            color: #334155; /* slate-700 */
+            transition: background-color 0.2s, color 0.2s;
+        }
+        .year-btn:hover {
+/* ... existing code ... -->
+            transition: background-color 0.2s, color 0.2s;
+        }
+        .year-btn:hover {
+            background-color: #f1f5f9; /* slate-100 */
+            color: #1e293b; /* slate-800 */
+        }
+        .year-btn.active {
+            background-color: #2563eb; /* blue-600 */
+            color: white;
+            font-weight: 600;
+            box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.1), 0 2px 4px -1px rgba(37, 99, 235, 0.06);
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+
+    <!-- 行動版側邊欄開關按鈕 -->
+    <button id="sidebar-toggle" class="lg:hidden fixed top-4 left-4 z-30 p-2 bg-white rounded-md shadow-lg text-slate-600 hover:text-slate-900">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+        </svg>
+    </button>
+
+    <!-- 側邊欄 (Sidebar) -->
+    <aside id="sidebar" class="fixed top-0 left-0 z-20 w-64 h-full bg-white shadow-xl transition-transform -translate-x-full lg:translate-x-0 lg:w-60 flex flex-col">
+        <div class="p-4 flex-shrink-0">
+            <h2 class="text-xl font-bold text-slate-800">片語分類</h2>
+        </div>
+        <nav id="year-selection" class="flex flex-col gap-1 p-3 flex-grow overflow-y-auto">
+            <!-- 年份按鈕將由 JavaScript 動態生成 -->
+        </nav>
+    </aside>
+
+    <!-- 行動版遮罩 (Overlay) -->
+    <div id="overlay" class="lg:hidden fixed inset-0 bg-black/30 z-10 hidden"></div>
+
+    <!-- 主內容區 (Main Content) -->
+    <main class="lg:ml-60 p-4 sm:p-8">
+        
+        <!-- 標題和練習按鈕 -->
+        <div class="flex justify-between items-center mb-8">
+            <h1 class="text-3xl sm:text-4xl font-bold text-slate-800 text-left">
+                高中英文片語練習
+            </h1>
+            <button id="practice-btn" class="py-3 px-6 bg-blue-600 text-white rounded-lg shadow-md hover:bg-blue-700 transition-transform active:scale-95 whitespace-nowrap">
+                開始練習 🚀
+            </button>
+        </div>
+
+        <!-- 總表複習 View (List View) -->
+        <section id="list-view" class="mb-12">
+            <h2 class="text-2xl font-semibold text-slate-700 mb-4">總表複習</h2>
+            <div class="w-full bg-white rounded-2xl shadow-lg p-4 sm:p-8">
+                <!-- 表格將被注入到這裡 -->
+                <div id="list-container" class="overflow-x-auto">
+                    <!-- JavaScript will populate this -->
+                </div>
+            </div>
+        </section>
+
+        <!-- 練習模式 View (預設隱藏) -->
+        <section id="practice-view" class="mb-12 hidden">
+            <h2 class="text-2xl font-semibold text-slate-700 mb-4">練習模式</h2>
+            <!-- Canvas 卡片容器 -->
+            <div class="w-full max-w-xl lg:max-w-2xl mx-auto bg-white rounded-2xl shadow-lg transition-all">
+                <canvas id="phraseCanvas" width="800" height="500" class="rounded-2xl"></canvas>
+            </div>
+            
+            <!-- 導航控制區 -->
+            <div class="flex justify-between items-center w-full max-w-xl lg:max-w-2xl mx-auto mt-6">
+                <!-- 上一個按鈕 -->
+                <button id="prev-btn" class="py-3 px-6 bg-white text-slate-700 rounded-lg shadow-md hover:bg-slate-50 transition-transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
+                    &larr; 上一個
+                </button>
+                
+                <!-- 計數器 -->
+                <span id="phrase-counter" class="text-lg font-medium text-slate-700 px-4 text-center">
+                    請選擇年份
+                </span>
+
+                <!-- 下一個按鈕 -->
+                <button id="next-btn" class="py-3 px-6 bg-blue-600 text-white rounded-lg shadow-md hover:bg-blue-700 transition-transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
+                    下一個 &rarr;
+                </button>
+            </div>
+            <div class="text-center mt-6">
+                <button id="exit-practice-btn" class="text-sm text-slate-500 hover:text-blue-600 transition-colors">
+                    結束練習
+                </button>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- 練習模式彈窗 (Modal) -->
+    <div id="practice-modal" class="fixed inset-0 z-40 bg-black/40 flex items-center justify-center p-4 hidden">
+        <div class="bg-white w-full max-w-md rounded-2xl shadow-xl p-6">
+            <h3 class="text-xl font-bold text-slate-800 mb-6">選擇要練習的年份</h3>
+            <div id="modal-year-list" class="flex flex-col gap-3 max-h-60 overflow-y-auto mb-6">
+                <!-- 年份核取方塊將由 JavaScript 動態生成 -->
+            </div>
+            <div class="flex justify-end gap-3">
+                <button id="modal-cancel-btn" class="py-2 px-5 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition">
+                    取消
+                </button>
+                <button id="modal-start-btn" class="py-2 px-5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+                    開始
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        // 儲存所有片語資料的原始字串
+        const rawData = `
+
+112學測
+in no time 馬上;立刻
+You can order things on our website and we will deliver them to you in no time.
+(您可以在我們的網站上訂購物品，我們會快速送到您手中。)
+by all means 好的、當然；請儘管…
+'Do you mind if I invite a few friends?' 'By all means.'
+("你介意我邀請幾個朋友嗎？" "當然可以")
+get over 克服;恢復常態
+It's been two years and she still hasn't gotten over her ex-boyfriend.
+(已經兩年了，她仍然忘不了她的前男友。)
+compete for 競爭
+Ten teams will compete for one spot to advance to the Koshien.
+(十支球隊將爭奪一個進入甲 sorprendente的名額。)
+give way to (1)讓位於 (2)向…屈服
+(1) You have to give way to the ambulance.
+(你必須讓路給救護車。)
+(2) He gave way to his anger and punched his boss in the face.
+(他被憤怒的情緒所控制，在他老闆臉上打了一拳。)
+make up for 彌補
+The volleyball player's insane vertical jump makes up for his height.
+(這名排球選手驚人的垂直跳躍能力彌補了他的身高。)
+free of 免除;擺脫
+The article is free of grammar errors after a few revisions.
+(這篇文章在經過幾次修改後已沒有文法錯誤。)
+long before 很久以前
+The artist had been making rock and roll music long before it became mainstream.
+(這位歌手在搖滾樂成為主流之前就已經創作搖滾樂很久了。)
+vary with 隨…變化
+Average income varies with age, occupation, and industry.
+(平均收入因pady、職業和產業別而有所不同。)
+bring about 造成;引起
+Covid brought about a lot of changes in our society.
+(Covid引起了社會上很多的改變。)
+accompany by 伴隨;陪同
+The movie star was accompanied by his bodyguards in the public event.
+(在該場公開活動中，那位電影明星有保鏢陪同。)
+pass through 經過
+I passed through the tea shop the other day and found out that they were selling ice cream.
+(我前幾天經過飲料店，發現他們正在賣冰淇淋。)
+reach for 伸手拿
+He stopped the car and reached for the gun in his glove compartment.
+(他停下車並伸手從副駕駛座的儲物箱中取出槍。)
+111學測
+contrary to 與…相反
+Contrary to the popular belief, the author believes that vulnerability is actually a strength.
+(與主流的看法相反，作者認為脆弱實際上是一種力量。)
+except for 除了…以外
+This place is quite cozy except for the smell.
+(除了氣味之外，這個地方很舒適。)
+more of 更大程度上的;更多的
+She is more of an introvert than an extrovert.
+(她更像是一個內向的人，而不是一個外向的人。)
+other than 而不…
+The round windows were designed for reasons other than aesthetics.
+(圓形窗戶的設計並非出於美觀考慮。)
+call for 需要;值得;應該
+The job does not call for highly skilled people.
+(這項工作不需要高技術的人才。)
+try out 參加(運動隊的)選拔;參加(劇組的)試演
+Jason tried out for the baseball team, but he didn't make the cut.
+(Jason參加了棒球隊的試訓，但他沒有入選。)
+110學測
+set up 設置
+Could you please help me set up the printer?
+(你能幫我設置印表機嗎？)
+hang on 等一下
+Hang on a second, let me go check.
+(稍等，讓我去檢查一下。)
+take over 接管;繼任
+Kelly’s son will take over the shop after she retires.
+(Kelly退休後，她的兒子將接管商店。)
+break down (1)故障 (2)分解 (3)崩潰
+(1) I was late because my car broke down.
+(我遲到了，因為我的車壞了。)
+(2) This video will teach you how to break down a chicken like a pro.
+(該影片將教您如何像專業人士一樣分解一隻雞。)
+(3) When we told her the bad news, she broke down and cried.
+(當我們告訴她這個壞消息時，她崩潰了，哭了起來。)
+come after 窮追N舍;追趕
+Jack will be coming after me if I don't return the money next week.
+(如果我下週不還錢，傑克就會來找我算帳。)
+get over 克服
+The actor has to get over his fear of heights for his role in the action movie.
+(這位演員必須克服自己的懼高症，才能扮演他在這部動作片中的角色。)
+hold on to 抓住;緊握
+There is no point in holding on to someone who doesn't care about you.
+(緊緊抓著一個不在乎你的人是沒有意義的。)
+watch out for 密切注意;關注
+Watch out for pickpockets when you're in a crowd.
+(當你在人群中時要小心扒手。)
+109學測
+carry away 使…忘形;使(興奮得)失去控制
+He always reminds himself not to be carried away by success.
+(他總是提醒自己不要因成功而得意忘形。)
+build on 建立在..基礎上
+Success is built on good daily habits.
+(成功是建立在良好的日常習慣上。)
+cope with 處理
+Jack found it difficult to cope with two babies at the same time.
+(Jack發現同時應付兩個嬰兒很困難。)
+get off 離開
+We should get off by 8:00 so that we can catch our flight home.
+(我們應該在8點之前離開，這樣我們才能趕上回家的班機。)
+as a result of 由於
+As a result of the typhoon, the flight is canceled.
+(由於颱風，航班被取消。)
+in a search for 尋找
+The police officer is in a search for the missing watch.
+(警察正在尋找遺失的手錶。)
+with a view to 目的是;為了
+He studied English hard with a view to mastering it quickly.
+(他努力學習是為了快速掌握英語。)
+to the extent of 到了…的程度
+Bill loves Ann to the extent of being willing to die for her.
+(Bill愛Ann，甚至到了願意為她而死的程度。)
+shoot out 射出;噴出
+A frog can shoot out its tongue, capture an insect, and pull it back into its mouth.
+(青蛙可以伸出舌頭，捕獲昆蟲，然後將其拉回到嘴裡。)
+hold on 等一下
+Hold on! Let me check my schedule.
+(等等！ 讓我檢查一下我的行事曆。)
+come across 碰到
+I came across my ex on Tinder yesterday.
+(昨天我在Tinder上遇到了我的前任。)
+give up 放棄
+Most of the students give up after they have failed the test several times.
+(多數學生幾次考試不及格後就放棄了。)
+as for 至於
+As for my past, I'm not telling you anything.
+(至於我的過去，我什麼也不會告訴你的。)
+owing to 因為;由於
+Owing to his health problems, John quit his job last month.
+(由於健康問題，John上個月辭職了。)
+in spite of 儘管
+She goes to work in spite of her back pain.
+(儘管背痛，她還是上班。)
+with respect to 關於
+It's going to raise problems with respect to water pollution.
+(這將引起有關水污染的問題。)
+break down (1)故障 (2)分解 (3)崩潰
+(1) I was late because my car broke down.
+(我遲到了，因為我的車壞了。)
+(2) This video will teach you how to break down a chicken like a pro.
+(該影片將教您如何像專業人士一樣分解一隻雞。)
+(3) When we told her the bad news, she broke down and cried.
+(當我們告訴她這個壞消息時，她崩潰了，哭了起來。)
+mix up 混合
+Have you mixed up the eggs and the sugar yet?
+(你把雞蛋和糖混合了嗎？)
+tear off 撕掉;脫掉
+The tiger tore off the boy’s arm.
+(老虎撕掉了男孩的手臂。)
+result in 造成;導致
+The dispute between the two countries resulted in war.
+(兩國之間的爭端導致了戰爭。)
+108學測
+lead to 導致
+Smoking leads to bad breath and stained teeth.
+(吸煙會導致口臭和牙齒弄髒。)
+bring out 使出現;使顯示
+Natural disasters can bring out the worst in people.
+(自然災害會給人們帶來最嚴重的 conséquences。)
+stem from 源於
+A lot of relationship issues stem from financial problems.
+(許多人際關係問題源於財務問題。)
+come across 遇到;碰到
+I came across my ex on Tinder yesterday.
+(昨天我在Tinder上遇到了我的前任。)
+come to an end 結束;終止
+All good things come to an end.
+(好景不常。)
+go to great lengths 竭盡全力;全力以赴
+We go to great lengths to make sure you are always comfortable in our hotel.
+(我們竭盡全力確保您在我們的飯店中總是感到舒適。)
+put in service 啟用服務;投入使用
+The warranty starts when the car is put in service.
+(保固期從汽車投入使用起開始。)
+hold in store 存放;等待
+Whatever life holds in store for me, I will never forget these words: "With great power
+comes great responsibility."
+(無論未來有什麼在等著我，我永遠不會忘記這句話：能力越強，責任越大。)
+bring along 帶來;攜帶
+Please bring along your family to the party tonight.
+(今晚請帶你的家人去參加聚會。)
+turn out 結果是…
+The ticket I bought online turned out to be a scam.
+(我在網路上買的票竟然是場騙局。)
+account for (1)佔(在數量上) (2)說明;解釋
+(1) African-Americans account for 12% of the US population.
+(非裔美國人占美國人口的12％。)
+(2) Recent pressure at work may account for his behavior.
+(最近的工作壓力可能解釋了他的行為。)
+serve as 充當;當作
+The box will serve as a table for now.
+(那個紙箱目前用來充當桌子。)
+due to 因為
+The match was cancelled due to the rain.
+(比賽由於下雨而取消。)
+nothing but 只是;只有
+They did nothing but argue for two weeks. That's why they couldn't get anything done.
+(他們什麼都沒做，只是爭吵了兩週。 這就是為什麼他們無法完成任何事情。)
+in contrast to 與…相反
+In contrast to his brothers, Tom is rather short.
+(與他的兄弟相比，湯姆很矮。)
+on behalf of 代表
+The lawyer spoke on behalf of his client.
+(律師代表他的委託人發言。)
+107學測
+refer to (1)提到;提及 (2)參考
+(1) The teacher begins the class by referring to a fairytale.
+(老師用一個童話開始這堂課。)
+(2) Please refer to the website for further information.
+(請參考該網站以獲取更多資訊。)
+answer for 對(某事物)負責
+The coach must answer for the team’s poor performance.
+(教練必須為球隊表現不佳負責。)
+take part in 參加;出席
+Bob refused to take part in the meeting.
+(Bob拒絕參加會議。)
+put up with 容忍;忍受
+I can't put up with the children's noise anymore.
+(我不能忍受孩子們的吵鬧了。)
+get away with 做（錯事）而未被懲罰
+The man got away with the robbery and fled to Mexico.
+(該名男子搶劫後逃往墨西哥。)
+clean up after 解決…製造的問題
+You are an adult. You should learn to clean up after yourself.
+(你是個大人。 您應該學會解決自己製造的問題。)
+run out of 用完;耗盡
+He ran out of toilet paper, so he used the newspaper he was reading instead.
+(他用完了衛生紙，所以他改用他正在看的報紙。)
+look down upon 輕視;小看
+We tend to subconsciously look down upon people who make less money than us.
+(我們傾向於下意識地看輕收入比我們低的人。)
+related to 與 … 相關
+Most of the popular posts are related to study methods.
+(大多數熱門貼文與學習方法有關。)
+aside from 除此之外
+Aside from cartoons, I also love watching movies.
+(除了卡通，我也喜歡看電影。)
+more than 超過;比…更多
+John loves his car more than anything else.
+(John愛他的汽車勝過任何事物。)
+nothing but 只是;只有
+They did nothing but argue for two weeks. That's why they couldn't get anything done.
+(他們什麼都沒做，只是爭吵了兩週。 這就是為什麼他們無法完成任何事。)
+in other words 換句話說
+“I have to take a bath now”, she texted. In other words, she doesn’t want to talk to
+you.
+(她發訊息說：“我現在必須洗個澡。” 換句話說，她不想和你說話。)
+by no means 絕不;一點都不
+He is by no means stupid. He was just playing dumb.
+(他絕不是愚蠢的。 他只是在裝傻。)
+at any cost 無論如何;不計代價
+Dave wanted to save his son at any cost, even at the risk of his own life.
+(Dave想要不惜一切代價挽救兒子，甚至冒著生命危險。)
+on the contrary 反之
+Alice loves the movie, “Peninsula”. On the contrary, I think it is terrible.
+(Alice喜歡《屍速列車:感染半島》。 相反地，我認為那部電影很糟糕。)
+such as 如;例如
+The money is used to buy basic foods such as flour, rice, and pasta.
+(這筆錢用於購買基本食品，例如麵粉，米和麵食。)
+regardless of 不管;不顧
+Jane married Will regardless of her parents’ objections.
+(Jane不顧父母的反對和Will結婚。)
+with respect to 關於
+It's going to raise problems with respect to water pollution.
+(這將引起有關水污染的問題。)
+on behalf of 代表
+The lawyer spoke on behalf of his client.
+(律師代表他的委託人發言。)
+106學測
+check out 去查看…;去了解…的情況
+You can check out our website for more information.
+(您可以查看我們的網站以獲取更多資訊。)
+look into (1) 凝視 (2)調查;研究
+(1) He looked into the mirror and smiled.
+(他看著鏡子，微笑著。)
+(2) The police said they would look into my case, but they didn’t call me back.
+(警察說他們會調查我的案子，但他們沒有回電話給我。)
+watch over 保護;照顧
+Sandy’s father is home during the day so he can watch over the kids for her.
+(Sandy的父親白天在家，所以他可以幫她照顧孩子。)
+see through 看穿;識破
+Everyone here can see through his lies. He is not fooling anyone.
+(這裡的每個人都可以看透他的謊言。 他無法欺騙任何人。)
+except for 除了…以外
+This place is quite cozy except for the smell.
+(除了氣味之外，這個地方很舒適。)
+be provided with 提供
+Many kids are not provided with proper education.
+(許多孩子沒有得到適當的教育。)
+far from 遠離;遠遠不
+We finished the project on time but the boss was far from satisfied.
+(我們按時完成了項目，但老闆並不滿意。)
+let alone 更不必說
+She doesn’t want to chat with you online, let alone going out with you.
+(她不想在線上跟你聊天，更不用說跟你外出了。)
+get done 結束;完成
+The report has to get done by the deadline.
+(該報告必須在截止日期之前完成。)
+get lost 滾開
+I won’t buy anything from you, so get lost!
+(我不會向你購買任何東西，所以滾開！)
+make do 湊合著用
+I have to make do with boxes before I buy a new desk.
+(在我買新書桌前，我只能先拿紙箱湊合著用)
+make believe 假裝
+He put on a cloak and made believe that he was a superhero.
+(他披上斗篷，假裝自己是超級英雄。)
+at most 至多
+Our supply can last seven days at most.
+(我們的補給最多可以撐7天。)
+in contrast 相反地
+Tim is tall. In contrast, his brother is short.
+(Tim個子高。 相反地，他的兄弟很矮。)
+out of 在…之外
+He threw a party when his parents were out of town.
+(他趁父母出遠門時開了一個派對。)
+as well as 以及
+Tom, as well as his brother, is an outstanding athlete.
+(Tom和他的兄弟都是傑出的運動員。)
+in case of 以防萬一
+She took an umbrella in case of rain.
+(她帶著傘，以防萬一下雨)
+due to 因為
+The match was cancelled dueto the rain.
+(比賽由於下雨而取消。)
+break off 中斷;中止
+Frank wants to break off his relationship with Gina because he loves someone else.
+(Frank想中斷與Gina的關係，因為他愛的是別人。)
+approve of 贊成;同意
+Peter’s boss doesn't approve of his plan.
+(Peter的老闆不同意他的計劃。)
+engage in 參加;參與
+The company is engaged in illegal activities.
+(該公司從事非法活動。)
+take over 接管;繼任
+Kelly’s son will take over the shop after she retires.
+(Kelly退休後，她的兒子將接管商店。)
+105學測
+make believe 假裝
+He put on a cloak and made believe that he was a superhero.
+(他披上斗篷，假裝自己是超級英雄。)
+get along 相處融洽;和睦相處
+I can’t get along with my neighbors.
+(我和鄰居處不來。)
+turn out 結果是
+The ticket I bought online turned out to be a scam.
+(我在網路上買的票竟然是場騙局。)
+feel like 想要做某事;想要某物
+I don’t feel like going out today.
+(我今天不想出門。)
+hold on to 保留;保存
+Hold on to this note. You’ll need this for your homework.
+(保留這個筆記。 你做作業的時候會需要。)
+get rid of 擺脫;去除
+He tried very hard to get rid of the cigarette smell on his fingers.
+(他非常努力地消除手指上的菸味。)
+make fun of 嘲弄;取笑
+Don’t make fun of people’s accents when they’re trying to speak a foreign language.
+(當別人嘗試說外語時，不要取笑他們的口音。)
+take advantage of 利用;佔便宜
+If you want to learn something new, you can take advantage of resources on the Internet.
+(如果您想學習新知識，可以利用網路上的資源。)
+to the point 中肯; 恰當
+Her speech is short and to the point.
+(她的演講簡短而切題。)
+on the rise 在上升;在增加
+The popularity of electronic cigarettes is on the rise.
+(電子煙的受歡迎程度正在上升。)
+off the hook 脫離困境;脫身
+The meeting tomorrow is cancelled, so I’m off the hook.
+(明天的會議被取消了，所以我逃過一劫。)
+for the record 特此強調;鄭重聲明
+For the record, I didn’t say their food was terrible. I just didn’t enjoy the dining
+environment.
+(鄭重聲明，我並不是說他們的食物糟透了。我只是不喜歡用餐環境。)
+103學測
+set out 開始;著手
+Mario and his brother set out to save the princess.
+(Mario和他的兄弟出發去拯救公主。)
+turn out 結果是
+The ticket I bought online turned out to be a scam.
+(我在網路上買的票竟然是場騙局。)
+put into practice 實踐;執行
+He is always talking about his plan to start a business, but he never put it into
+practice.
+(他總是在談論自己的創業計劃，但他從未付諸實踐。)
+take into account 考慮到;顧及
+We should take into account the weather forecast when making travel plans.
+(制定旅行計劃時，應考慮天氣預報。)
+102學測
+in fact 事實上
+I have little experience with coding. In fact, I started learning two hours ago.
+(我幾乎沒有寫程式的經驗。 實際上，我是兩個小時前開始學習的。)
+at the same time 同時
+You shouldn’t text and drive at the same time.
+(您不應該同時傳訊息和開車。)
+on the other hand 另一方面
+Rita is very outgoing. On the other hand, her brother is quite shy.
+(Rita很外向。 另一方面，她的弟弟很害羞。)
+composed of 由…組成的
+Around 70% of the human body is composed of water.
+(人體約70％由水組成。)
+based on 以…為基礎;基於…
+His theory is based on pure speculation, which means what he just said is not
+reliable.
+(他的理論基於純粹的推測，這代表他剛才所說的是不可靠的。)
+result in 造成;導致
+The dispute between the two countries resulted in war.
+(兩國之間的爭端導致了戰爭。)
+fight against 與…鬥爭
+Nick spent most of his life fighting against racism.
+(Nick一生中大部分時間都在對抗種族主義。)
+101學測
+in fact 事實上
+I have little experience with coding. In fact, I started learning two hours ago.
+(我幾乎沒有寫程式的經驗。 實際上，我是兩個小時前開始學習的。)
+once again 再一次
+Ray went over the report once again to make sure he got everything right.
+(Ray再次檢查了報告，以確保一切正確。)
+as usual 一如往常
+As usual, I got up at seven today and went to work.
+(和往常一樣，我今天七點起床去上班。)
+for instance 例如
+The food delivery service, Uber Eats, for instance, is thriving under the pandemic.
+(在疫情之下，送餐服務，例如Uber Eats，正在蓬B發展。)
+look for 尋找
+The parents are looking for their lost kid in the mall.
+(父母正在商場裡尋找走失的孩子。)
+get over 恢復正常;克服
+It took Mary a long time to get over her ex.
+(Mary花了很長時間才放下她的前任。)
+do without 沒有也行
+I can do without a car if public transportation is convenient enough.
+(如果大眾運輸工具足夠方便，我沒有汽車也行。)
+bump into 巧遇
+I bumped into my classmate in Penghu.
+(我在澎湖遇到同學。)
+skip over 跳過
+You can skip over this chapter if you are familiar with this programming language.
+(如果您熟悉此程式語言，則可以跳過本章。)
+come across 遇到;碰到
+I came across my ex on Tinder yesterday.
+(昨天我在Tinder上遇到了我的前任。)
+look into (1) 凝視 (2)調查;研究
+(1) He looked into the mirror and smiled.
+(他看著鏡子，微笑著。)
+(2) The police said they would look into my case, but they didn’t call me back.
+(警察說他們會調查我的案子，但他們沒有回電話給我。)
+break down (1)故障 (2)分解 (3)崩潰
+(1) I was late because my car broke down.
+(我遲到了，因為我的車壞了。)
+(2) This video will teach you how to break down a chicken like a pro.
+(該影片將教您如何像專業人士一樣分解一隻雞。)
+(3) When we told her the bad news, she broke down and cried.
+(當我們告訴她這個壞消息時，她崩潰了，哭了起來。)
+100學測
+go through 經歷
+Things we go through in life shape us into who we are.
+(生活中經歷的事情把我們塑造成現在的樣子。)
+make up (1)編造 (2)組成 (3)和好 (4)補償
+(1) He made up a story about his past.
+(他編造了一個關於自己過去的故事。)
+(2) Kasukabe Defence Force is made up of 5 kids in the neighborhood.
+(春日部防衛隊由附近的5個小孩組成。)
+(3) Jim and Alex had a fight last night, but they made up with each other this
+morning.
+(Jim和Alex昨晚吵架，但他們今天早上和好了。)
+(4) If you can’t come tomorrow, you can make up the test next week.
+(如果明天不能來，您可以在下週補考。)
+change into 改變;變化
+The old prison is changed into a museum.
+(舊監獄被改建成博物館。)
+turn out 結果是
+The ticket I bought online turned out to be a scam.
+(我在網路上買的票竟然是場騙局。)
+appeal to 吸引
+The videos on this channel are designed to appeal to young people.
+(該頻道上的影片旨在吸引年輕人。)
+be presented with 獲贈
+Joe was presented with a sports car on his 20th birthday.
+(Joe在20歲生日時獲贈一輛跑車。)
+result in 造成;導致
+The dispute between the two countries resulted in war.
+(兩國之間的爭端導致了戰爭。)
+bring about 造成;引起
+The organization aims at bringing about changes in the education system.
+(該組織旨在實現教育體系的變革。)
+110指考
+wear out 磨損;耗盡
+Jim goes jogging every morning, so his sneakers wear out quickly.
+(Jim每天早上都去慢跑，所以他的運動鞋很快就磨損了。)
+break through 突破;打破
+Firefighters broke through the door to save the little boy.
+(消防隊員破門而入救了小男孩。)
+heat up 加熱;使…變暖
+Friction with the atmosphere will cause a meteoroid to heat up and burn while traveling at high speed.
+(與大氣的摩擦會導致流星體在高速飛行時升溫並燃燒。)
+in short 總而言之;簡而言之
+We have a lot to go over in this meeting. In short, we are behind schedule, and the boss is not happy.
+(在這次會議上，我們有很多事要討論。 簡而言之，我們進度落後，而且老闆不太高興。)
+109指考
+serve as 充當;起…的作用
+The box will serve as a desk for now.
+(那個箱子暫時被用來充當書桌。)
+fight for 為…而戰
+The workers protest to fight for their rights.
+(工人們為爭取自己的權利而抗議。)
+persist in 堅持
+The actor persists in doing his own stunts.
+(那位演員堅持親自表演角色的特技動作。)
+correspond to 相當於;符合
+This graph corresponds to the economic growth rate of the country.
+(此圖對應於該國的經濟增長率。)
+toss out 丟棄;扔掉
+Tim tossed out his old clothes.
+(Tim扔掉他的舊衣服。)
+get off 離開
+We should get off by 8:00 so that we can catch our flight home.
+(我們應該在8點之前離開，這樣我們才能趕上回家的班機。)
+catch up 趕上
+If we take the shortcut, we might be able to catch up with them in an hour.
+(如果我們走捷徑，我們也許可以在一小時內趕上他們。)
+carry on 繼續
+After the scientist died, his students carried on his research.
+(那位科學家去世後，他的學生繼續進行他的研究。)
+108指考
+if any 若有的話
+Feel free to ask questions, if any.
+(若有問題，請隨時提出。)
+among others 其中;尤其
+Amy and Bob, among others, showed up on Friday to support the baseball team of their school.
+(Amy和Bob等人星期五到場支持他們學校的棒球隊。)
+in short 總而言之;簡而言之
+We have a lot to go over in this meeting. In short, we are behind schedule, and the boss is not happy.
+(在這次會議上，我們有很多事要討論。 簡而言EOF，我們進度落後，而且老闆不太高興。)
+at best 充S量;頂多
+The watch is worth $1000 at best.
+(這隻手錶頂多值1000元。)
+at large (1) 逍遙法外 (2) 普遍地;全體地
+(1) The bank robbers are still at large.
+(銀行搶劫犯尚未被捕。)
+(2) Society at large has been affected by the COVID-19 pandemic.
+(整個社會都受到了COVID-19疫情的影響。)
+in service 服勤中
+The number you have dialed is not in service.
+(您撥打的號碼不可用。)
+by contrast 相比之下
+Teresa is talkative and outgoing. By contrast, her sister is quiet and shy.
+(Teresa健談又外向。相比之下，她的妹妹卻安靜而害羞。)
+under control 在掌控之下
+Don't worry. The situation is under control.
+(別擔心，狀況在掌控之中。)
+107指考
+check out 檢查
+I checked out the report to make sure all the numbers are correct.
+(我檢查了報告以確保所有數字均正確。)
+watch over 保護;照顧
+The father sat beside the swimming pool to watch over the kids.
+(那名父親坐在游泳池旁照看孩子們。)
+speak of 談到;論及
+They vowed to never speak of the accident again.
+(他們發誓不再提起那場意外。)
+trade with 和…貿易
+The Chinese traded with people in Central Asia through the Silk Road.
+(中國人通過絲路與中亞人民進行貿易。)
+in spite of 儘管
+She goes to work in spite of her back pain.
+(儘管背痛，她還是去上班。)
+as a result of 由於
+As a result of the typhoon, the flight is canceled.
+(由於颱風，航班被取消。)
+to the best of… (my knowledge/my ability) 就我所知/就我能力所及
+I will help the team to the best of my ability.
+(我會盡我所能幫助團隊。)
+for the sake of 由於;為了
+The single mother works three jobs for the sake of her children.
+(那位單親媽媽為了孩子而打三份工。)
+106指考
+put up with 容忍;忍受
+I can't put up with the noise any longer.
+(我再也受不了那噪音了。)
+crack down on 打擊;鎮壓
+The government is determined to crack down on drug trafficking across the border.
+(政府決心打擊邊境的毒品交易。)
+give in to 屈服;讓步
+We will never give in to the enemies.
+(我們永遠不會屈服於敵人。)
+look out for (1)照顧 (2)留心;注意尋找
+(1) People in my neighborhood look out for each other.
+(我們社區的人會互相照顧。)
+(2) Upon arriving at the station, look out for a man in a black suit.
+(到達車站後，留意尋找一個穿黑色西裝的高個子男人。)
+subject to 受到…的影響
+Arrivals subject to quarantine must not take public transport.
+(接受檢疫的入境者不得搭乘大眾運輸工具。)
+accustomed to 習慣於
+I'm accustomed to getting up at 8:30 AM.
+(我習慣在早上8:30起床。)
+blessed with 在…方面有福
+Not everyone is blessed with a beautiful voice.
+(不是每個人都擁有好聽的聲音。)
+familiar with 熟悉
+You can skip over this chapter if you are familiar with this programming language.
+(如果您熟悉此程式語言，則可以跳過本章。)
+105指考
+long before 很早以前;很久以前
+The thief got away long before the police arrived.
+(小偷早在警察趕到之前就逃走了。)
+close to 接近於;靠近
+I live close to the library.
+(我住在圖書館附近。)
+aside from 除此之外
+Aside from cartoons, I also love watching movies.
+(除了卡通，我也喜歡看電影。)
+soon after 不久之後
+His parents died in a car accident soon after he was born.
+(他出生後不久，他的父母死於一場車禍。)
+in addition to 除…之外
+In addition to English, I also speak a little bit of Japanese.
+(除了英語之外，我還會說一點日語。)
+with respect to 關於;至於
+With respect to the pollution issue, the mayor said that works are in progress to solve that problem.
+(關於污染問題，市長說，解決工作正在進行中。)
+104指考
+cater to 滿足或提供需求
+The fitness gym caters to the needs of senior citizens.
+(該健身房能滿足老年人的需求。)
+depend on 取決於
+The effect of this therapy depends on the patient's health condition and age.
+(該療法的效果取決於患者的健康狀況和年齡。)
+go after sb/sth (1)追趕;追捕 (2)謀求;追逐
+(1) It was a priority for DEA to start going after Pablo Escobar.
+(開始追捕Pablo Escobar是DEA當時的優先事項。)
+(2) He spends most of his life going after money and fame.
+(他一生的大部分時間都在追求名利。)
+identify with 認同(某人);與(某人)產生共鳴
+Many readers can identify with the characters in the novel.
+(許多讀者對小說中的人物有共鳴。)
+above all 最重要的;尤其
+Above all, you should recognize your strengths and weaknesses.
+(最重要的是,你應該認清自己的優點和 weaknesses。)
+as it appears 看起來
+Everything is not as it appears.
+(一切都不像它表面上看起來的那樣。)
+to some extent 在某種程度上
+Although I don't like his attitude, I agree with him to some extent.
+(儘管我不喜歡他的態度，但我在某種程度上同意他所說的。)
+come across 碰到
+I came across my ex on Tinder yesterday.
+(昨天我在Tinder上遇到了我的前任。)
+sweep through 席捲
+The plague quickly swept through the continent.
+(瘟疫迅速席捲了整個大陸。)
+103指考
+in short 簡言之;總之
+The exam is tomorrow and I haven't studied anything yet. In short, I'm doomed.
+(明天就要考試了，但我甚麼都還沒讀。簡言之，我完了。)
+102指考
+by all means 好的;當然
+‘Do you mind if I invite a few friends?’ ‘By all means.’
+("你介意我邀請幾個朋友嗎？" "當然可以")
+as a result 由於
+As a result of the typhoon, the flight is canceled.
+(由於颱風，航班被取消。)
+on the other hand 另一方面
+Rita is very outgoing. On the other hand, her brother is quite shy.
+(Rita很外向。 另一方面，她的弟弟很害羞。)
+out of luck 運氣不好
+Jack was out of luck today during the hunt.
+(Jack今天打獵時運G不好。)
+in the dark 蒙在鼓底;一無所D
+She kept her family in the dark about the decision to get married.
+(對於她決定結婚的事，她的家人一無所知。)
+off the record 下說的;不供發表的
+Our conversation here is supposed to be off the record.
+(我們在這裡的談話應該是不公開的。)
+on the rise 在上升
+The oil price has been on the rise in recent months.
+(近幾個月來，油價一直在上漲。)
+so that 為了;以便
+He has to get up early so that he won't be late for school.
+(他必須早起，這樣才不會在上學時遲到。)
+as soon as 一…就
+He locked the door as soon as he entered my office.
+(他一進我的辦公室就把門鎖上了。)
+in case of 以防萬一
+She took an umbrella in case of rain.
+(她帶著傘，以防萬一下雨)
+ever since 從…以來
+He has been depressed ever since his mother died.
+(自從他母親去世後，他一直很ES。)
+warm up 暖身
+Make sure you warm up properly before jumping into the pool.
+(跳入游泳池之前，請確保您已做完適當的暖身。)
+101指考
+so much as 甚至於
+He had not spoken so much as a single word to me before.
+(他以前連一句話都沒有跟我說過。)
+as well as 以及
+Tom, as well as his brother, is an outstanding athlete.
+(Tom和他的兄弟都是傑出的運動員。)
+in spite of 儘管
+She goes to work in spite of her back pain.
+(儘管背痛，她還是上班。)
+on behalf of 代表
+The lawyer spoke on behalf of his client.
+(律師代表他的委託人發言。)
+in this regard 關於;在這點上
+He is very sensitive in this regard.
+(他在這方面非常敏感。)
+one on one 一對一
+I need to talk to Josh one on one.
+(我需要和Josh一對一談談。)
+on one's own 獨自
+He finished the project on his own.
+(他獨自完成了該專案。)
+by and large 大體上;總體上
+By and large, the party went well.
+(總的來說，派對進行得很順利。)
+opposed to 反對
+John's parents were opposed to his marriage with Mary.
+(John的父母反對他與Mary的婚姻。)
+fight over 爭奪;為…爭吵
+Tom and Mary always fight over trivial matters.
+(湯姆和瑪麗總是為一些小事爭吵。)
+battle for 為……鬥爭
+Ten teams are battling for glory in this competition.
+(在這場比賽中，十支球隊正在為榮耀而戰。)cm.)
+compete against 與…競爭
+Hell's Kitchen is a reality TV show where top chefs compete against each other.
+(地獄廚房是頂級廚師相互競爭的實境秀節目。)
+head for 朝…前進
+The hotel is a good place to stay overnight if you are heading for the airport the next day.
+(如果你第二天要去機場，該旅館是一個過夜的好地方。)
+back up 備份
+You should back up your files regularly.
+(您應該定期備份您的檔案。)
+call out 大聲地喊
+I called out for help when I realized I was trapped in the bathroom.
+(當我意識到自己被困在浴室時，我大聲呼救。)
+pass on 放棄
+Sara decided to pass on the job offer.
+(Sara決定放棄這個工作機會。)
+100指考
+at fault 有責任;有錯
+Sometimes it is hard to determine who is at fault in a car accident involving multiple cars.
+(在涉及多輛汽車的車禍中，有時很難認定誰有過錯。)
+on call 待命
+Many systems need to be available around the clock, so some engineers have to be on call for support.
+(許多系統需要全天候可用，因此一些工程師必須隨時待命支援。)
+in tears 哭泣
+His joke had us laughing so hard that we were in tears.
+(他的笑話讓我們笑到眼淚都流下來了。)
+off guard 毫無防備
+The teacher caught me off guard with a quiz.
+(老師的一個小考讓我措手不及。 )
+by and large 總體上，一般來說
+There are a few things I don't like about the film, but by and large, it is still worth watching.
+(這部電影有一些我不喜歡的地方，但總的來說，它仍然值得一看。)
+over and over 一遍又一遍
+My neighbor plays Baby Shark over and over.
+(我的鄰居一遍又一遍的放baby shark。)
+as usual 照例;照常
+As usual, I got up at 8 this morning.
+(像往常一樣，我今天早上8點起床。)
+in some cases 在某些情況下
+The statement is true only in some cases.
+(該陳述僅在某些情況下是正確的。)
+to be frank 老實說
+To be frank, I don't really care about what happened between you and your girlfriend.
+(老實說，我並不在乎你和你女朋友之間發生了什麼。)
+with the help of 在…的幫助下
+With the help of the police officer, I got my wallet back.
+(在警察的幫助下，我取回了我的錢包。 )
+in the presence of 當著…的面
+People tend to feel stressed in the presence of someone in authority.
+(當有權威人士在場時,人們往往會感到壓力。)
+on top of 除…之外
+I just lost my job, and on top of that my car broke down on my way home.
+(我剛丟了工作，更慘的是，我的車在回家的路上拋錨了。 )
+in place of 代替
+Maple syrup can also be used in place of sugar in many recipes.
+(在許多食譜中，楓糖漿也可以用來代替糖。)
+
+學測必考片語 1
+abide by (=be faithful to; obey) 忠於；遵守
+All members must abide by the rules of the club.
+(所有成員都必須遵守俱樂部的規則。)
+be absent from... 缺席，不在
+He was absent from class yesterday.
+(他昨天缺席了課程。)
+absence of mind (=being absent-minded) 心不在焉
+His mistake was due to absence of mind.
+(他的錯誤是出於心不在焉。)
+be absorbed in 全神貫注於…
+She was absorbed in her book and didn't hear me call.
+(她全神貫注地看書，沒聽到我叫她。)
+(be) abundant in (be rich in; be well supplied with) 富於,富有
+This area is abundant in natural resources.
+(這個地區富於自然資源。)
+access(to) (不可數名詞) 能接近,進入,了解
+Students need access to the library.
+(學生需要進入圖書館的權限。)
+by accident (=by chance, accidentally) 偶然地,意外
+I found this old photo by accident.
+(我偶然發現了這張舊照片。)
+Without accident (=safely) 安全地
+They arrived at their destination without accident.
+(他們平安抵達了目的地。)
+of one’s own accord (=without being asked; willingly; freely) 自願地，主動地
+He offered to help of his own accord.
+(他主動提出要幫忙。)
+in accord with 與…一致
+His actions are not in accord with his words.
+(他的言行不一。)
+out of one’s accord with 同…不一致
+This result is out of accord with our expectations.
+(這個結果與我們的預期不一致。)
+with one accord (=with everybody agreeing) 一致地
+They shouted "Yes!" with one accord.
+(他們一致地喊著「好！」。)
+
+學測必考片語 2
+in accordance with (=in agreement with) 依照,根據
+We acted in accordance with the instructions.
+(我們依照指示行動。)
+on one’s own account 為了某人自己的利益;自行負責;依靠自己
+He started the business on his own account.
+(他為了自己而開創了這項事業。)
+on account 賒帳
+I bought the furniture on account.
+(我賒帳買了這些家具。)
+on account of 因為
+The game was canceled on account of the rain.
+(因為下雨，比賽被取消了。)
+on no account 不論什麼原因也不
+On no account should you lend him money.
+(你絕不應該借錢給他。)
+take...into account (=consider) 把…考慮進去
+You must take his age into account.
+(你必須考慮到他的年齡。)
+give sb. an account of 說明,解釋(理由)
+He gave us a full account of his travels.
+(他向我們詳細說明了他的旅行。)
+account for (=give an explanation or reason for) 解釋,說明
+Can you account for your absence?
+(你能解釋你缺席的原因嗎？)
+accuse...of... (=charge...with) 指控,控告
+She accused him of stealing her watch.
+(她指控他偷了她的手錶。)
+be accustomed to (=be in the habit of, be used to) 習慣於
+I am accustomed to getting up early.
+(我習慣早起。)
+be acquainted with (=to have knowledge of) 了解; 熟悉
+Are you acquainted with the new manager?
+(你和新來的經理熟悉嗎？)
+
+學測必考片語 3
+act on 奉行,按照…行動
+You should act on your doctor's advice.
+(你應該遵照醫生的建議。)
+act as 扮演
+He acted as our guide during the trip.
+(旅途中他擔任我們的導遊。)
+act for 代理
+Our lawyer will act for us in this matter.
+(我們的律師將在這件事上代表我們。)
+adapt oneself to (=adjust oneself to) 使自己適應於
+You must adapt yourself to the new environment.
+(你必須使自己適應新環境。)
+adapt...(for) (=make sth. Suitable for a new need) 改編,改寫
+The novel was adapted for television.
+(這本小說被改編成電視劇。)
+in addition (=besides) 此外,又,加之
+He is smart, and in addition, he is diligent.
+(他很聰明，此外，他還很勤奮。)
+in addition to (=as well as, besides, other than) 除…之外
+In addition to his salary, he receives a bonus.
+(除了薪水，他還收到一筆獎金。)
+adhere to (=abide by, conform to, comply with) 堅持, 遵循
+We must adhere to the principles of justice.
+(我們必須堅持正義的原則。)
+adjacent (=next to, close to) 毗鄰的, 臨近的
+Their house is adjacent to the railway.
+(他們的房子緊鄰鐵路。)
+adjust..(to) (=change slightly) 調節; 適應
+She is trying to adjust to the new job.
+(她正試著適應新工作。)
+admit of (=be capable of, leave room for) …的可能, 留有…的餘地
+The situation admits of no delay.
+(情況不容許耽擱。)
+in advance (before in time) 預告,事先
+Please let me know in advance if you are coming.
+(如果你要來，請事先通知我。)
+
+學測必考片語 4
+to advantage 有利的,使優點更加突出地
+The new lighting shows off the painting to advantage.
+(新的照明使畫作的優點更加突顯。)
+have an advantage over 勝過
+Our team has an advantage over the other teams.
+(我們隊比其他隊更有優勢。)
+take advantage of (=make the best of, utilize) 利用
+You should take advantage of this opportunity.
+(你應該好好利用這個機會。)
+agree with 贊同(某人意見)
+I agree with you on this point.
+(在這一點上我同意你的看法。)
+agree to 同意
+He agreed to our proposal.
+(他同意了我們的提議。)
+in agreement (with) 同意, 一致
+I am in agreement with his decision.
+(我同意他的決定。)
+ahead of 在…之前, 超過…
+He finished the race ahead of all the other runners.
+(他領先所有其他選手完成了比賽。)
+ahead of time 提前
+She finished her homework ahead of time.
+(她提前完成了作業。)
+in the air 1)不肯定, 不具體 2)在謠傳中
+Our travel plans are still in the air.
+(我們的旅行計劃還沒確定。)
+above all (=especially, most important of all) 尤其是, 最重要的
+Above all, be true to yourself.
+(最重要的是，要忠於自己。)
+in all (=counting everyone or everything, altogether) 總共, 總計
+There are twenty students in all.
+(總共有二十名學生。)
+after all 畢竟,到底
+I knew he would succeed after all.
+(我早知道他終究會成功。)
+(not) at all 一點也不
+I am not tired at all.
+(我一點也不累。)
+all at once (=suddenly) 突然
+All at once, the lights went out.
+(燈突然都熄滅了。)
+once and for all 只此一次; 斷然地
+We need to solve this problem once and for all.
+(我們需要徹底解決這個問題。)
+first of all 首先
+First of all, I'd like to thank you for coming.
+(首先，我要感謝各位的蒞臨。)
+all in all 大體上說
+All in all, the party was a great success.
+(總的來說，這個派對非常成功。)
+be all in 累極了
+After the long hike, I was all in.
+(長途健行之後，我累癱了。)
+all but 幾乎
+The movie was all but finished when he arrived.
+(他到達時，電影幾乎都演完了。)
+
+學測必考片語 5
+allow for (=take into consideration) 考慮到, 估计到
+We must allow for bad weather when planning the trip.
+(我們計畫旅行時必須考慮到壞天氣。)
+amount to (=to be equal to) 總計, 等於
+The total cost amounts to $500.
+(總花費合計五百美元。)
+answer for (=be responsible for) 對…負責
+You will have to answer for your actions.
+(你必須為你的行為負責。)
+answer to (=conform to) 適合, 符合
+The description answers to that of the missing man.
+(這描述與失蹤男子的特徵相符。)
+be anxious about 為…焦急不安
+She is anxious about her son's health.
+(她為兒子的健康感到焦慮。)
+be anxious for 盼望
+We are all anxious for your success.
+(我們都盼望你成功。)
+apologize to sb. for sth. 為…向…道歉
+You should apologize to her for your rudeness.
+(你應該為你的粗魯向她道歉。)
+appeal to sb. for sth. 為某事向某人呼籲
+They appealed to the government for help.
+(他們向政府呼籲尋求幫助。)
+appeal to sb. 對某人有吸引力
+This music appeals to young people.
+(這種音樂很吸引年輕人。)
+apply to sb. for sth. 為…向…申請
+He applied to the bank for a loan.
+(他向銀行申請貸款。)
+apply for 申請
+I decided to apply for the job.
+(我決定申請這份工作。)
+apply to 適用
+These rules apply to everyone.
+(這些規則適用於每個人。)
+approve of (=consent to) 贊成
+Her parents do not approve of her marriage.
+(她的父母不贊成她的婚事。)
+approve vt. 批准
+The committee approved the plan.
+(委員會批准了這項計畫。)
+
+學測必考片語 6
+arise from (=be caused by) 由…引起
+Many problems arise from misunderstanding.
+(許多問題源於誤解。)
+arrange for sb/sth. to do sth. 安排…做…
+We have arranged for a car to pick you up.
+(我們已經安排了一輛車來接你。)
+arrive at 到達某地(小地方); 得出,作出
+We arrived at the station just in time.
+(我們及時趕到了車站。)
+arrive in 到達某地(大地方)
+He will arrive in Taipei tomorrow.
+(他明天將抵達台北。)
+be ashamed of (=feel shame for) 以…為羞恥
+You should be ashamed of your behavior.
+(你應該為你的行為感到羞恥。)
+assure sb. of sth. (=try to cause to believe) 向…保證, 使…確信
+I assure you of my full support.
+(我向你保證我會全力支持。)
+attach(to) (=to fix, fasten; join) 縛, 係 ,結
+Please attach a recent photo to your application.
+(請在你的申請表上貼一張近照。)
+make an attempt at doing sth. (to do sth.) 試圖做…
+He made an attempt to pass the exam.
+(他試圖通過考試。)
+attend to (=give one’s attention) 注意, 照顧
+Please attend to what I am saying.
+(請注意聽我說的話。)
+attend on(upon) (=wait upon, serve) 侍候, 照料
+Several nurses attended on the patient.
+(好幾位護士在照料那位病人。)
+attitude to/ toward …對…的態度. 看法
+What is your attitude toward this issue?
+(你對這個議題的態度是什麼？)
+attribute...to... (=to believe sth. to be the result of...) 把..歸因於..
+He attributed his success to hard work.
+(他把他的成功歸因於努力。)
+
+學測必考片語 7
+on the average (=on average, on an average) 平均
+On the average, I spend two hours a day reading.
+(平均來說，我每天花兩小時閱讀。)
+(be) aware of (=be conscious of) 意識到,知道
+I was not aware of the danger.
+(我沒有意識到危險。)
+at the back of (=behind) 在…後面
+The garden is at the back of the house.
+(花園在房子的後面。)
+in the back of 在…後部(裏面)
+He was sitting in the back of the classroom.
+(他坐在教室的後排。)
+on the back of 在…後部(外面)
+There is a label on the back of the box.
+(盒子背面有一張標籤。)
+be on one’s back (=be ill in bed) 臥病不起
+He has been on his back for a month.
+(他已經臥病一個月了。)
+at one’s back (=supporting or favoring sb.) 支援,維護
+With a strong team at his back, he won the election.
+(有強大團隊的支持，他贏得了選舉。)
+turn one’s back on sb. (=ignore) 不理睬(某人),背棄,拋棄
+He turned his back on his old friends.
+(他背棄了他的老朋友們。)
+behind one’s back 背著某人(說壞話)
+They were talking about me behind my back.
+(他們在我背後談論我。)
+be based on / upon 基於
+The story is based on real events.
+(這個故事是基於真實事件。)
+on the basis of 根據…,在…基礎上
+He was chosen on the basis of his experience.
+(他憑藉經驗被選中。)
+beat...at 在…運動項目上打贏
+I beat him at chess.
+(我下棋贏了他。)
+
+學測必考片語 8
+begin with 以…開始
+The program began with a song.
+(節目以一首歌開始。)
+to begin with (=first of all) 首先,第一
+To begin with, you need to buy the ingredients.
+(首先，你需要購買食材。)
+on behalf of (=as the representative of) 以…名義
+I am speaking on behalf of my colleagues.
+(我代表我的同事發言。)
+believe in (=have faith or trust in) 相信,依賴,信仰
+Do you believe in ghosts?
+(你相信有鬼嗎？)
+benefit (from) 受益,得到好處
+We all benefit from clean air.
+(我們都受益於乾淨的空氣。)
+for the benefit of 為了…的利益(好處)
+He worked for the benefit of the poor.
+(他為窮人的利益而工作。)
+for the better 好轉
+His health has changed for the better.
+(他的健康狀況已好轉。)
+get the better of (=defeat sb.) 打敗,勝過
+His curiosity got the better of him and he opened the box.
+(他的好奇心戰勝了他，他打開了盒子。)
+by birth 在出生上,論出身,按血統
+He is a prince by birth.
+(他出身於王子家庭。)
+at birth 在出生時
+The baby weighed 3 kilograms at birth.
+(嬰兒出生時體重為三公斤。)
+give birth to 出生
+She gave birth to a healthy baby girl.
+(她生下一個健康的女嬰。)
+blame sb. for sth. 因…責備某人
+Don't blame me for your mistake.
+(不要因為你的錯誤而責備我。)
+blame sth. on sb. 把…推在某人身上
+He blamed the accident on his friend.
+(他把事故歸咎於他的朋友。)
+in blossom 開花(指樹木)
+The cherry trees are in blossom.
+(櫻花樹盛開了。)
+
+學測必考片語 9
+on board 到船上,在船上,上火車或飛機
+All passengers are on board.
+(所有乘客都已登機。)
+boast of (or about) 吹噓
+He is always boasting of his achievements.
+(他總是在吹噓自己的成就。)
+out of breath 喘不過氣來
+I was out of breath after running up the stairs.
+(跑上樓梯後我喘不過氣來。)
+in brief (=in as few words as possible) 簡言之
+In brief, the plan was a disaster.
+(簡言之，這個計畫是個災難。)
+in bulk 成批地,不散裝的
+We buy food in bulk to save money.
+(我們大量購買食物以省錢。)
+take the floor 起立發言
+She took the floor to ask a question.
+(她起立發問。)
+on business 出差辦事
+He has gone to Japan on business.
+(他去日本出差了。)
+be busy with sth. 忙於某事
+He is busy with his homework.
+(他忙於做作業。)
+be busy doing sth. 忙於做某事
+She is busy cooking dinner.
+(她正忙著做晚餐。)
+last but one 倒數第二
+My name was the last but one on the list.
+(我的名字在名單上是倒數第二個。)
+but for (=without) 要不是
+But for your help, I would have failed.
+(要不是你的幫助，我就失敗了。)
+
+學測必考片語 10
+buy sth. for...money 用多少錢買
+I bought this watch for $100.
+(我花了一百美元買了這隻手錶。)
+be capable of 能夠,有能力
+He is capable of solving the problem.
+(他有能力解決這個問題。)
+be capable of being +過去分詞 是能夠被…的
+The problem is capable of being solved.
+(這個問題是能夠被解決的。)
+in any case (=whatever happens; anyhow) 無論如何
+In any case, I will support you.
+(無論如何，我都會支持你。)
+in case (=for fear that) 萬一
+Take an umbrella in case it rains.
+(帶把傘，以防萬一下雨。)
+in case of (=in the event of) 如果發生…萬一
+In case of fire, use the emergency exit.
+(如遇火災，請使用緊急出口。)
+in no case 在任何情況下都不
+In no case should you cheat in the exam.
+(任何情況下你都不應在考試中作弊。)
+be cautious of 謹防
+You should be cautious of strangers.
+(你應該提防陌生人。)
+center one’s attention on (=focus one’s attention on) 把某人的注意力集中在…上
+He centered his attention on his studies.
+(他把注意力集中在學業上。)
+be certain of (=be sure of) 有把握,一定
+I am certain of his success.
+(我確信他會成功。)
+for certain (=for sure) 肯定地,有把握地
+He will come back for certain.
+(他肯定會回來。)
+
+學測必考片語 11
+by chance (=accidentally, by accident) 偶然
+I met her by chance at the station.
+(我在車站偶然遇見了她。)
+for a change 換換環境(花樣等)
+Let's eat out for a change.
+(我們出去吃飯換換口味吧。)
+charge sb. with ... 控告某人犯有…
+He was charged with murder.
+(他被控告犯有謀殺罪。)
+in charge of (=responsible for) 負責(某事)
+She is in charge of the marketing department.
+(她負責行銷部門。)
+in the charge of …由…管
+The child is in the charge of his aunt.
+(這個孩子由他的姑姑照管。)
+take charge of (=to be or become responsible for) 負責管理(照顧)
+She took charge of the project.
+(她開始負責這個專案。)
+charge...for 因…索取(費用)
+How much do you charge for a haircut?
+(理髮收費多少？)
+round the clock (=all day and all night) 晝夜不停地
+The factory operates round the clock.
+(這家工廠晝夜不停地運作。)
+comment on 評論
+He refused to comment on the situation.
+(他拒絕對此情況發表評論。)
+commit oneself to 使自己承擔…
+He committed himself to finishing the work on time.
+(他保證自己會按時完成工作。)
+commit sb. to prison 把某人送進監獄
+The judge committed him to prison for five years.
+(法官判他入獄五年。)
+in common (和…)有共同之處,共用
+We have nothing in common.
+(我們沒有任何共同之處。)
+be common to sb. 是與某人所共有的
+This problem is common to all of us.
+(這個問題是我們大家所共有的。)
+
+學測必考片語 12
+keep company with (=be friendly with) 和…要好
+He keeps company with some bad people.
+(他與一些壞人為伍。)
+compare...with ... 把…與…比較
+We compared the copy with the original.
+(我們將副本與原件進行了比較。)
+compare...to... 把…比作…
+The poet compared her eyes to stars.
+(詩人把她的眼睛比作星星。)
+by comparison 比較起來
+By comparison, this one is much better.
+(相較之下，這個好多了。)
+in comparison with (=in contrast to) 和…比起來
+In comparison with his brother, he is very tall.
+(和他哥哥比起來，他很高。)
+compensate for (=make up for) 補償,賠償,彌補
+Nothing can compensate for the loss of his child.
+(什麼都無法彌補他失去孩子的痛苦。)
+compensate sb. for sth. 賠償,彌補
+The company compensated him for his injuries.
+(公司賠償了他的傷。)
+complain of (or about) 抱怨;訴苦;控告
+She often complains of headaches.
+(她經常抱怨頭痛。)
+complain to sb. about sth. (or sb.) 向某人抱怨…
+He complained to the manager about the poor service.
+(他向經理抱怨服務太差。)
+comply with (=act in accordance with) 遵守,依從
+You must comply with the rules.
+(你必須遵守規則。)
+conceive of (think of, imagine, consider) 想像,設想
+I cannot conceive of him doing such a thing.
+(我無法想像他會做這樣的事。)
+concentrate on (or upon) 集中,專心
+I need to concentrate on my work.
+(我需要專心工作。)
+
+學測必考片語 13
+be concerned with (=about) 與…有關
+This book is concerned with the history of Asia.
+(這本書是關於亞洲歷史的。)
+concern oneself about / with 關心
+He concerns himself with every detail of the project.
+(他關心專案的每一個細節。)
+in conclusion (=as the last thing) 最後一點
+In conclusion, I would like to thank everyone.
+(最後，我要感謝大家。)
+at the conclusion of 當…結束時
+He spoke at the conclusion of the meeting.
+(他在會議結束時發了言。)
+condemn sb. to 判決
+The prisoner was condemned to death.
+(那個囚犯被判處死刑。)
+on condition that (=if) 以…為條件, 假如
+I'll lend you the money on condition that you pay it back next week.
+(我借錢給你，條件是你下週要還。)
+in / out of condition 健康狀況好/不好
+He is in good condition for his age.
+(以他的年紀來說，他身體狀況很好。)
+confess(to) (=admit a fault, crime) 承認,供認
+He confessed to stealing the money.
+(他承認偷了錢。)
+confide in (=to talk freely to sb. about one’s secret) 對…講真心話, 依賴
+She always confides in her best friend.
+(她總是對她最好的朋友說真心話。)
+in confidence 推心置腹地
+I told him the secret in confidence.
+(我私下把秘密告訴了他。)
+with confidence 滿懷信心地
+He spoke with confidence.
+(他滿懷信心地發言。)
+have confidence in 對…有信心
+I have confidence in his ability.
+(我對他的能力有信心。)
+
+學測必考片語 14
+be confident of 有信心
+I am confident of success.
+(我對成功充滿信心。)
+confine...to... 把…限制在某範圍內
+Please confine your remarks to the topic.
+(請將您的發言限制在主題範圍內。)
+confirm sb. in 使某人更堅定(信念等)
+His success confirmed him in his belief.
+(他的成功使他更堅定了自己的信念。)
+conform to (=be in agreement with, comply with) 符合,遵照,遵守
+All students must conform to the school rules.
+(所有學生都必須遵守校規。)
+be confronted with (=be brought face to face with) 面對,面臨
+We are confronted with a difficult choice.
+(我們面臨一個困難的選擇。)
+congratulate sb. on 祝賀
+I congratulated him on his graduation.
+(我祝賀他畢業。)
+in connection with (=with regard to) 關於
+I am writing to you in connection with your job application.
+(我寫信給你是關於你求職申請的事。)
+be conscious of (=be aware of) 覺察,知道
+He was not conscious of my presence.
+(他沒有察覺到我的存在。)
+consent to (=give agreement to permission) 同意
+Her father would not consent to her marriage.
+(她的父親不同意她的婚事。)
+in consequence (=as a result) 結果
+He was lazy, and in consequence, he failed the exam.
+(他很懶惰，結果考試不及格。)
+
+學測必考片語 15
+in consequence of (=as a consequence of) 由於…的結果
+He lost his job in consequence of his carelessness.
+(他因為粗心而丟了工作。)
+under consideration 在考慮中
+Your proposal is under consideration.
+(你的提議正在考慮中。)
+in consideration of (=in return for, on account of) 由於
+He was given a bonus in consideration of his hard work.
+(考慮到他的辛勤工作，他得到了一筆獎金。)
+on no consideration (in no case) 無論如何也不
+On no consideration will I agree to your demand.
+(我無論如何也不會同意你的要求。)
+take...into consideration (=take account of) 考慮到, 把…考慮進去
+We must take all factors into consideration.
+(我們必須把所有因素都考慮進去。)
+considerate (=thoughtful) 體貼的,考慮他人需要的
+It was very considerate of you to help me.
+(你幫我真是太體貼了。)
+consist of (=be composed of) 由…組成的
+The team consists of ten members.
+(這個隊由十名隊員組成。)
+consist in 主要在於
+Happiness consists in contentment.
+(幸福在於滿足。)
+consist with 符合,與…一致
+His actions do not consist with his words.
+(他言行不一。)
+be consistent with (=be in agreement with) 與…一致
+Your story is not consistent with the facts.
+(你的說法與事實不符。)
+be consistent in 一貫的
+He is consistent in his political views.
+(他一貫堅持自己的政治觀點。)
+consult sb. on/ about sth. 向…徵求…方面的意見, 就…向…請教
+You should consult your doctor about your health.
+(你應該就你的健康問題諮詢醫生。)
+to one’s heart’s content 盡情地,痛痛快快
+The children played in the park to their heart's content.
+(孩子們在公園裡盡情地玩耍。)
+
+學測必考片語 16
+be content with (=be satisfied with) 滿足於
+He is content with his current salary.
+(他對目前的薪水很滿意。)
+be content to do sth. 願意做某事
+I am content to stay at home and read.
+(我願意待在家裡讀書。)
+contrary to (=in opposition to) 與…相反
+Contrary to my expectations, the movie was very boring.
+(與我的預期相反，這部電影非常無聊。)
+on the contrary 相反
+I'm not sick; on the contrary, I feel great.
+(我沒有生病；相反地，我感覺好極了。)
+contrast...with 把…與…相對照(對照)
+Let's contrast his early work with his later work.
+(讓我們把他的早期作品和晚期作品對照一下。)
+in contrast to/with 和…形成對比
+In contrast to the city, the countryside is very quiet.
+(與城市相比，鄉村非常安靜。)
+by contrast 對比之下
+Tom is very active. By contrast, his brother is quite lazy.
+(湯姆很活躍。相比之下，他弟弟很懶。)
+contribute to 有助於
+Exercise contributes to good health.
+(運動有助於健康。)
+under control (被)控制住
+The fire is now under control.
+(火勢現已得到控制。)
+out of control 無法控制
+The car went out of control and crashed.
+(汽車失控撞毀了。)
+at one’s convenience 在方便的時間或地點
+Please call me at your convenience.
+(請在你方便的時候打電話給我。)
+be convenient to / for 對…方便
+The new subway line is convenient for me.
+(新的地鐵線對我很方便。)
+convince sb. of (=cause sb. to believe) 使某人確信
+He convinced me of his innocence.
+(他說服我相信他是無辜的。)
+cope with (=deal with) 應付, 處理
+She has to cope with a lot of stress in her job.
+(她工作中必須應對很大的壓力。)
+
+學測必考片語 17
+in the corner (of) 在角落裏
+The table is in the corner of the room.
+(桌子在房間的角落裡。)
+on(at) the corner of a street 在街道拐彎處
+There is a post office on the corner of the street.
+(街道拐角處有一家郵局。)
+round the corner 拐過彎; 即將來臨
+The bus stop is just round the corner.
+(公車站就在拐角處。)
+in a tight corner 陷入困境
+His lie put him in a tight corner.
+(他的謊言使他陷入困境。)
+correspond (with) (=exchange letters) 通信
+They have been corresponding with each other for years.
+(他們已經通信多年。)
+correspond to 相當於
+The result corresponds to our prediction.
+(結果與我們的預測相符。)
+correspond with 符合,一致
+Your actions must correspond with your words.
+(你必須言行一致。)
+at all costs 不惜任何代價
+We must win the game at all costs.
+(我們必須不惜一切代價贏得比賽。)
+at the cost of 以…為代價
+He saved the child at the cost of his own life.
+(他犧牲自己的生命救了那個孩子。)
+a matter of course 理所當然的事
+It's a matter of course that you should help your parents.
+(你幫助父母是理所當然的事。)
+as a matter of course 當然地, 自然地
+He takes his success as a matter of course.
+(他把自己的成功視為理所當然。)
+in (during) the course 在…過程中
+In the course of the discussion, he raised a new point.
+(在討論過程中，他提出了一個新觀點。)
+in due course (=without too much delay) 到一定時候
+You will receive the payment in due course.
+(你到時候就會收到付款。)
+on credit 賒購
+He bought a new car on credit.
+(他賒購了一輛新車。)
+to one’s credit 使某人感到光榮
+It is to his credit that he admitted his mistake.
+(他承認了錯誤，這值得稱讚。)
+be critical of 愛挑毛病的, 批評的
+He is always critical of his colleagues.
+(他總是對同事百般挑剔。)
+
+學測必考片語 18
+cure sb. of+某種疾病 治好某人的疾病
+The doctor cured him of his illness.
+(醫生治好了他的病。)
+a danger to 對…的危險
+Smoking is a danger to your health.
+(吸煙對你的健康是一種威脅。)
+be in danger(of) 處於…危險中
+He is in danger of losing his job.
+(他有失去工作的危險。)
+be out of danger 脫離危險
+The patient is now out of danger.
+(病人現在脫離危險了。)
+to date (=so far, until now) 到目前為止
+This is his best work to date.
+(這是他迄今為止最好的作品。)
+out of date 過時的
+This dictionary is out of date.
+(這本詞典過時了。)
+up to date 新式的,時興的
+I need to get an up-to-date report.
+(我需要一份最新的報告。)
+date back to 可追溯到
+The castle dates back to the 15th century.
+(這座城堡可追溯到十五世紀。)
+date from 從某時期開始(有)
+This tradition dates from the Middle Ages.
+(這個傳統始於中世紀。)
+deal with (=concern) 論及
+This book deals with the problem of pollution.
+(這本書是關於污染問題的。)
+be in debt to sb. 欠…的債
+I am in debt to him for $100.
+(我欠他一百美元。)
+on the decline 在衰退中, 在減少中
+The company's profits are on the decline.
+(公司的利潤正在下降。)
+to one’s delight 令某人高興
+To my delight, she accepted my invitation.
+(令我高興的是，她接受了我的邀請。)
+delight in (=take great pleasure in doing sth.) 喜歡, 取樂
+He delights in teasing his little sister.
+(他喜歡逗他的小妹妹。)
+take (a) delight in 喜好…, 以…為樂
+She takes delight in helping others.
+(她以助人為樂。)
+
+學測必考片語 19
+demand sth. of sb. 向某人要求(非物質的)東西
+The teacher demands respect from the students.
+(老師要求學生尊敬他。)
+demand sth. from sb. 向某人要求(物質的)東西
+The kidnappers demanded $1 million from the family.
+(綁匪向家屬索要一百萬美元。)
+in demand 有需求
+Good engineers are always in demand.
+(優秀的工程師總是供不應求。)
+on demand 受到要求時
+The information is available on demand.
+(這些資訊可隨時索取。)
+be dependent on 依靠
+The child is dependent on his parents.
+(這個孩子依靠他的父母。)
+deprive sb. of sth. 剝奪某人某物
+The war deprived them of their homes.
+(戰爭剝奪了他們的家園。)
+derive...from (=obtain...from) 從…取得,..由…來的
+He derives great pleasure from his hobbies.
+(他從愛好中獲得極大的樂趣。)
+derive from (=come from) 起源於
+This word derives from Latin.
+(這個詞起源於拉丁語。)
+despair of (=lose all hope of) 絕望
+He despaired of ever finding his lost wallet.
+(他對找回丟失的錢包絕望了。)
+in despair 絕望
+She was in despair after losing her job.
+(失業後她陷入了絕望。)
+despite (=in spite of) 不管, 儘管
+He went out despite the heavy rain.
+(儘管下著大雨，他還是出去了。)
+in detail 詳細地
+He explained the plan in detail.
+(他詳細地解釋了這個計畫。)
+deviate from 偏離, 不按…辦
+You must not deviate from the agreed route.
+(你絕不能偏離既定路線。)
+
+學測必考片語 20
+on a diet 吃某種特殊飲食, 節食
+I'm on a diet to lose weight.
+(我正在節食減肥。)
+differ from...in 與…的區別在於…
+He differs from his brother in personality.
+(他和他兄弟在個性上不同。)
+in difficulties... 有困難,處境困難
+She is in financial difficulties.
+(她陷入了財務困境。)
+discharge sb. (from)...for (=dismiss sb.) 因…解雇,開除
+He was discharged from the army for bad conduct.
+(他因行為不端被軍隊開除。)
+in disorder 慌亂地,狼狽不堪
+His room is always in disorder.
+(他的房間總是亂七八糟。)
+on display (=being shown publicly) 陳列
+The new products are on display.
+(新產品正在展出。)
+dispose of (=get rid of ,throw away) 處理掉
+You should dispose of that old car.
+(你應該處理掉那輛舊車。)
+beyond dispute 不容爭議的,無可爭議
+It is beyond dispute that he is the best player.
+(他是最好的球員，這點不容爭議。)
+in dispute 在爭議中
+The ownership of the land is in dispute.
+(這塊土地的所有權尚在爭議中。)
+in the distance 在遠處
+We saw a ship in the distance.
+(我們看到遠處有一艘船。)
+
+學測必考片語 21
+(be) distinct from ( = be different from) 與…截然不同
+This new model is distinct from the previous one.
+(這個新型號與前一個截然不同。)
+distinguish between (=make differences) 辨別
+It's hard to distinguish between the two twins.
+(很難分辨這對雙胞胎。)
+distinguish...from 把…與…區別開
+Can you distinguish this word from the others?
+(你能把這個詞和其他詞區別開嗎？)
+do away with (=get rid of; abolish; discard) 除去,廢除,取消
+They want to do away with the old traditions.
+(他們想廢除舊傳統。)
+have...to do with 與…有關係
+What does this have to do with me?
+(這跟我有什麼關係？)
+without doubt (=undoubtedly) 無可置疑地
+Without doubt, he is the best person for the job.
+(毫無疑問，他是這份工作的最佳人選。)
+in doubt (=in a condition of uncertainty) 對…表示疑惑
+If you are in doubt, ask for help.
+(如果你有疑問，就尋求幫助。)
+be due to 是由於
+The accident was due to his carelessness.
+(事故是由於他的粗心造成的。)
+come off duty 下班
+I come off duty at 5 p.m.
+(我下午五點下班。)
+go on duty 上班
+The new guard goes on duty at 10 p.m.
+(新來的警衛晚上十點上班。)
+
+學測必考片語 22
+be on duty 值班, 值日, 在上班時
+He is on duty tonight.
+(他今晚值班。)
+be in duty bound to (do) (=be required by conscience) 有義務(做)
+I feel in duty bound to tell him the truth.
+(我覺得我有義務告訴他真相。)
+be eager for 想得到, 盼望
+He is eager for news of his family.
+(他渴望得到家人的消息。)
+by ear (=play music from memory) 憑記憶,不看樂譜
+He can play any tune by ear.
+(他能憑記憶彈奏任何曲子。)
+have an ear for (=have keen recognition of sounds) 對..有鑒賞力
+She has a good ear for music.
+(她對音樂有很好的鑒賞力。)
+a word in one’s ear 私房話, 秘密話
+He had a word in her ear before she left.
+(在她離開前，他跟她說了句悄悄話。)
+on earth 究竟, 到底, 全然
+What on earth are you doing?
+(你到底在做什麼？)
+with ease (= easily) 容易, 不費力
+She passed the exam with ease.
+(她輕鬆通過了考試。)
+at (one’s) ease (= without worry or nervousness) 自在,不拘束
+He felt at ease among his friends.
+(他在朋友當中感到很自在。)
+put sb. at his / her ease (=free sb. from worry) 使某人感到無拘束
+His friendly manner put everyone at their ease.
+(他友善的態度讓大家感到很自在。)
+
+學測必考片語 23
+economize on (=save sth.) 節省
+We need to economize on electricity.
+(我們需要節約用電。)
+have an effect on 對…有影響
+His speech had a great effect on the audience.
+(他的演講對聽眾有很大的影響。)
+be in effect (=be in operation) 有效
+The new law is now in effect.
+(新法律現在生效了。)
+go into effect 生效
+The law will go into effect next month.
+(該法律將於下個月生效。)
+in effect (=in fact, really) 實際上
+In effect, they have already made the decision.
+(實際上，他們已經做出了決定。)
+give effect to (=carry out) 實行,使…生效
+We must give effect to the new policy.
+(我們必須執行這項新政策。)
+to no effect 不起作用,沒有取得任何效果
+He tried to persuade her, but to no effect.
+(他試圖說服她，但沒有效果。)
+(be) of no effect (=useless) 無效
+The medicine was of no effect.
+(這藥無效。)
+to the effect that 大意是…,主要內容是…
+He sent a letter to the effect that he was resigning.
+(他寄來一封信，大意是說他要辭職。)
+to that effect 是那個意思的…
+He said something to that effect.
+(他説了那樣意思的話。)
+
+Indented line
+學測必考片語 24
+emerge from (=appear, become known ) 出現, 暴露
+The truth finally emerged from the investigation.
+(真相在調查後終於浮出水面。)
+place(or put, lay) an emphasis on 強調,把重點放在…上
+The school places great emphasis on language learning.
+(這所學校非常重視語言學習。)
+encourage sb. in 鼓勵
+We should encourage him in his studies.
+(我們應該鼓勵他學習。)
+on end (=continuously) 連續地
+It rained for three days on end.
+(雨連續下了三天。)
+(be) at an end (=finished) 結束了
+Our long journey is at an end.
+(我們的長途旅行結束了。)
+no end of (=very many/much) 很多,大量
+He has no end of good ideas.
+(他有數不完的好主意。)
+in the end (=finally, eventually) 最終
+In the end, he decided to go abroad.
+(最後，他決定出國。)
+at one’s wit’s end (=not knowing what to do) 無法可想, 智窮計盡
+I'm at my wit's end trying to solve this problem.
+(我為了解決這個問題而絞盡腦汁。)
+end up with 以…而結束
+If you keep spending money like this, you'll end up with nothing.
+(如果你繼續這樣花錢，最後會一無所有。)
+
+學測必考片語 25
+come to an end (=finish) 結束
+The meeting finally came to an end.
+(會議終於結束了。)
+end in 以…為結束
+The game ended in a draw.
+(比賽以平局告終。)
+engage in 或 be engaged in 忙於, 從事
+He is engaged in writing a new book.
+(他正忙著寫一本新書。)
+enter for (=put the name on a list for) 報名參加
+Are you going to enter for the competition?
+(你會報名參加比賽嗎？)
+enter into (=begin) 開始(談話,談判等)
+They refused to enter into any negotiations.
+(他們拒絕進行任何談判。)
+enter on / upon (=begin) 開始 (一個時代. 一種生涯. 一段任期等)
+He entered upon a new career as a writer.
+(他開始了作為作家的新生涯。)
+be entitled to (=be given the right to do sth.) 有權…,有資格…
+Everyone is entitled to a fair trial.
+(每個人都有權獲得公平的審判。)
+be equal to 等於
+His strength is equal to the task.
+(他的能力足以勝任這項任務。)
+be/ feel equal to (=have enough strength, ability etc.) (某人)能勝任,能應付
+I don't feel equal to such a difficult task.
+(我覺得我無法勝任這麼困難的任務。)
+on equal terms (=on and equal footing) 平等地
+We compete on equal terms with other companies.
+(我們與其他公司在平等的基礎上競爭。)
+be equipped with 裝備有,裝有
+The car is equipped with air conditioning.
+(這輛車配有空調。)
+`;
+
+        // 應用程式狀態
+        let allData = {};
+        let currentYear = null; // 用於總表複習
+        let currentPhrases = []; // 用於練習模式
+        let currentIndex = 0;
+        let isFlipped = false;
+        let sortedYears = [];
+
+        // DOM 元素
+        const canvas = document.getElementById('phraseCanvas');
+        const ctx = canvas.getContext('2d');
+        const yearSelectionContainer = document.getElementById('year-selection');
+        const counterElement = document.getElementById('phrase-counter');
+        const prevBtn = document.getElementById('prev-btn');
+        const nextBtn = document.getElementById('next-btn');
+        
+        // 側邊欄
+        const sidebarToggle = document.getElementById('sidebar-toggle');
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('overlay');
+        
+        // 視圖
+        const listView = document.getElementById('list-view');
+        const listContainer = document.getElementById('list-container');
+        const practiceView = document.getElementById('practice-view');
+
+        // 練習按鈕
+        const practiceBtn = document.getElementById('practice-btn');
+        const exitPracticeBtn = document.getElementById('exit-practice-btn');
+
+        // 彈窗 (Modal)
+        const practiceModal = document.getElementById('practice-modal');
+        const modalYearList = document.getElementById('modal-year-list');
+        const modalCancelBtn = document.getElementById('modal-cancel-btn');
+        const modalStartBtn = document.getElementById('modal-start-btn');
+
+
+        /**
+         * 解析原始資料字串並將其轉換為結構化物件
+         */
+        function parseData(text) {
+            const lines = text.trim().split('\n');
+            const data = {};
+            let currentYearKey = "112學測"; // *** CHANGED ***
+            data[currentYearKey] = [];
+            let currentCard = {};
+            let cardStep = 0; // 0: 尋找片語/標題, 1: 尋找英文例句, 2: 尋找中文例句
+
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i].trim();
+                if (!line) continue; // 跳過空行
+
+                // --- 檢查是否為標題 ---
+                // 標題 1: 111學測, 110指考
+                // 標題 2: 實用會考片語 ...
+                // 標題 3: 學測必考片語 1 (新增的檢查)
+                if (/^\d{3}(學測|指考)$/.test(line) || line.startsWith('實用會考片語') || /^學測必考片語 \d+$/.test(line)) {
+                    // 如果是標題, 結束上一張卡片 (如果有的話)
+                    if (cardStep !== 0 && currentCard.phrase) {
+                        data[currentYearKey].push(currentCard);
+                    }
+                    // 設置新標題
+                    currentYearKey = line;
+                    if (!data[currentYearKey]) {
+                        data[currentYearKey] = [];
+                    }
+                    currentCard = {};
+                    cardStep = 0;
+                    continue;
+                }
+
+                // --- 狀態機解析 ---
+                const chineseCharIndex = line.search(/[\u4e00-\u9fa5]/);
+
+                if (cardStep === 0) {
+                    // 尋找片語/定義
+                    // (e.g., "in no time 馬上" or "boast of (or about) 吹噓")
+                    if (chineseCharIndex > 0 && !line.startsWith('(') && !line.startsWith("'")) {
+                        currentCard = {
+                            phrase: line.substring(0, chineseCharIndex).trim(),
+                            definition: line.substring(chineseCharIndex).trim()
+                        };
+                        cardStep = 1; // 進入下一步 (尋找 EN 例句)
+                    }
+                    // else: 忽略 (可能是 '---' 註解行)
+                
+                } else if (cardStep === 1) {
+                    // 尋找英文例句
+                    // 檢查這行 *不是* 另一個片語/定義, 也 *不是* '(...)'
+                    if (chineseCharIndex <= 0 && !line.startsWith('(') && !line.startsWith("'")) {
+                        currentCard.example_en = line;
+                        cardStep = 2; // 進入下一步 (尋找 ZH 例句)
+                    } 
+                    // 檢查這行 *是* 另一個片語/定義 (表示上張卡片是 1-line 格式)
+                    else if (chineseCharIndex > 0 && !line.startsWith('(') && !line.startsWith("'")) {
+                        // 儲存上一張 (1-line) 卡片
+                        data[currentYearKey].push(currentCard);
+                        // 開始這張新卡片
+                        currentCard = {
+                            phrase: line.substring(0, chineseCharIndex).trim(),
+                            definition: line.substring(chineseCharIndex).trim()
+                        };
+                        cardStep = 1; // 保持在 step 1
+                    }
+                    // 檢查這行 *是* ZH 例句 (表示上張卡片是 2-line 格式, 缺 EN)
+                    else if (line.startsWith('(')) {
+                        currentCard.example_zh = line.replace(/^\(|\)$/g, '');
+                        data[currentYearKey].push(currentCard);
+                        currentCard = {};
+                        cardStep = 0;
+                    }
+                    // else: 忽略, 保持 in step 1
+
+                } else if (cardStep === 2) {
+                    // 尋找中文例句
+                    if (line.startsWith('(')) {
+                        currentCard.example_zh = line.replace(/^\(|\)$/g, '');
+                        data[currentYearKey].push(currentCard); // 儲存 (3-line) 卡片
+                        currentCard = {};
+                        cardStep = 0;
+                    }
+                    // 檢查這行 *是* 另一個片語/定義 (表示上張卡片是 2-line 格式)
+                    else if (chineseCharIndex > 0 && !line.startsWith('(') && !line.startsWith("'")) {
+                        // 儲存上一張 (2-line) 卡片
+                        data[currentYearKey].push(currentCard);
+                        // 開始這張新卡片
+                        currentCard = {
+                            phrase: line.substring(0, chineseCharIndex).trim(),
+                            definition: line.substring(chineseCharIndex).trim()
+                        };
+                        cardStep = 1; // 轉到 step 1
+                    }
+                    // else: 忽略 (格式錯誤), 重置
+                    else {
+                        data[currentYearKey].push(currentCard); // 儲存 (2-line) 卡片
+                        currentCard = {};
+                        cardStep = 0;
+                    }
+                }
+            }
+            
+            // 處理檔案結尾的最後一張卡片
+            if (currentCard.phrase) {
+                data[currentYearKey].push(currentCard);
+            }
+
+
+            // 過濾掉沒有內容的年份
+            Object.keys(data).forEach(key => {
+                if (data[key].length === 0) {
+                    delete data[key];
+                }
+            });
+
+            return data;
+        }
+
+
+        /**
+         * 在 Canvas 上繪製圓角矩形 (卡片背景)
+         */
+        function drawRoundRect(ctx, x, y, width, height, radius) {
+            ctx.beginPath();
+            ctx.moveTo(x + radius, y);
+            ctx.lineTo(x + width - radius, y);
+            ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+            ctx.lineTo(x + width, y + height - radius);
+            ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+            ctx.lineTo(x + radius, y + height);
+            ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+            ctx.lineTo(x, y + radius);
+            ctx.quadraticCurveTo(x, y, x + radius, y);
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        /**
+         * 在 Canvas 上繪製自動換行的文字
+         * @returns {number} - 傳回繪製完畢後的 y 座標
+         */
+        function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
+            if (!text) return y; // 處理空文字
+            const words = text.split(' ');
+            let line = '';
+            let currentY = y;
+
+            for (let n = 0; n < words.length; n++) {
+                let testLine = line + words[n] + ' ';
+                // 檢查是否包含中文字元，如果是，則以字為單位
+                if (/[\u4e00-\u9fa5]/.test(words[n])) {
+                    const chars = words[n];
+                    for(let j = 0; j < chars.length; j++) {
+                        let testCharLine = line + chars[j];
+                        let metrics = ctx.measureText(testCharLine);
+                        if (metrics.width > maxWidth && j > 0) {
+                            ctx.fillText(line, x, currentY);
+                            line = chars[j];
+                            currentY += lineHeight;
+                        } else {
+                            line = testCharLine;
+                        }
+                    }
+                    line += ' '; // 加回空格
+                } else {
+                    // 英文單字處理
+                    let metrics = ctx.measureText(testLine);
+                    let testWidth = metrics.width;
+                    if (testWidth > maxWidth && n > 0) {
+                        ctx.fillText(line, x, currentY);
+                        line = words[n] + ' ';
+                        currentY += lineHeight;
+                    } else {
+                        line = testLine;
+                    }
+                }
+            }
+            ctx.fillText(line.trim(), x, currentY);
+            return currentY + lineHeight;
+        }
+
+        /**
+         * 繪製當前的卡片 (練習模式)
+         */
+        function drawCard() {
+            // 清除畫布
+            ctx.fillStyle = '#ffffff'; // 使用白色背景 (因為容器是白色)
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // 設置卡片邊距和圓角
+            const padding = 30;
+            const cardX = padding;
+            const cardY = padding;
+            const cardWidth = canvas.width - padding * 2;
+            const cardHeight = canvas.height - padding * 2;
+            const cardRadius = 20;
+
+            // 繪製卡片陰影
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.08)';
+            ctx.shadowBlur = 20;
+            ctx.shadowOffsetX = 0;
+            ctx.shadowOffsetY = 5;
+
+            // 繪製卡片背景
+            ctx.fillStyle = '#f8fafc'; // 卡片使用一個非常淺的灰色
+            drawRoundRect(ctx, cardX, cardY, cardWidth, cardHeight, cardRadius);
+
+            // 重置陰影
+            ctx.shadowColor = 'transparent';
+
+            // 檢查是否有選中的年份
+            if (currentPhrases.length === 0) {
+                ctx.fillStyle = '#334155';
+                ctx.font = 'bold 28px Inter';
+                ctx.textAlign = 'center';
+                ctx.fillText('點擊上方按鈕開始練習', canvas.width / 2, canvas.height / 2);
+                return;
+            }
+
+            const card = currentPhrases[currentIndex];
+            if (!card) return; // 安全檢查
+
+            if (!isFlipped) {
+                // --- 卡片正面 (題目) ---
+                
+                // 繪製片語
+                ctx.fillStyle = '#1e293b';
+                ctx.font = 'bold 44px Inter';
+                ctx.textAlign = 'center';
+                // 垂直居中
+                const textY = canvas.height / 2 + 15; 
+                wrapText(ctx, card.phrase, canvas.width / 2, textY - 40, cardWidth - 60, 50);
+
+                // 繪製提示文字
+                ctx.fillStyle = '#64748b';
+                ctx.font = '18px "Noto Sans TC"';
+                ctx.textAlign = 'center';
+                ctx.fillText('點擊卡片翻面', canvas.width / 2, canvas.height - 60);
+
+            } else {
+                // --- 卡片反面 (答案) ---
+                let currentY = cardY + 60; // 頂部起始 Y 座標
+                const contentX = cardX + 40;
+                const contentWidth = cardWidth - 80;
+
+                // 繪製片語
+                ctx.fillStyle = '#1e293b';
+                ctx.font = 'bold 30px Inter';
+                ctx.textAlign = 'center';
+                currentY = wrapText(ctx, card.phrase, canvas.width / 2, currentY, contentWidth, 38);
+                
+                currentY += 10;
+
+                // 繪製定義
+                ctx.fillStyle = '#2563eb'; // 藍色
+                ctx.font = 'bold 24px "Noto Sans TC"';
+                ctx.textAlign = 'center';
+                currentY = wrapText(ctx, card.definition, canvas.width / 2, currentY, contentWidth, 32);
+
+                currentY += 25; // 分隔線前的間距
+
+                // 繪製分隔線
+                ctx.strokeStyle = '#e2e8f0';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(contentX, currentY);
+                ctx.lineTo(contentX + contentWidth, currentY);
+                ctx.stroke();
+
+                currentY += 35; // 分隔線後的間距
+
+                // 繪製英文例句
+                ctx.fillStyle = '#334155';
+                ctx.font = '22px Inter';
+                ctx.textAlign = 'left';
+                currentY = wrapText(ctx, card.example_en, contentX, currentY, contentWidth, 30);
+                
+                currentY += 20; // 中英文例句間距
+
+                // 繪製中文例句
+                ctx.fillStyle = '#64748b';
+                ctx.font = '20px "Noto Sans TC"';
+                ctx.textAlign = 'left';
+                wrapText(ctx, card.example_zh, contentX, currentY, contentWidth, 28);
+            }
+        }
+
+        /**
+         * 創建年份選擇按鈕 (側邊欄)
+         */
+        function createYearButtons() {
+            // 獲取所有年份並排序
+            sortedYears = Object.keys(allData).sort((a, b) => b.localeCompare(a, 'zh-Hant-TW-u-kn-true'));
+            
+            sortedYears.forEach(year => {
+                const button = document.createElement('button');
+                button.textContent = year;
+                button.className = 'year-btn'; // 使用 <style> 中定義的 class
+                button.onclick = () => selectYear(year);
+                yearSelectionContainer.appendChild(button);
+            });
+        }
+
+        /**
+         * 選擇一個年份 (用於總表複習)
+         * @param {string} year - 選擇的年份
+         */
+        function selectYear(year) {
+            currentYear = year;
+            const phrases = allData[year];
+
+            // 更新按鈕的 active 狀態
+            document.querySelectorAll('.year-btn').forEach(btn => {
+                if (btn.textContent === year) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+
+            // 更新總表
+            populateListView(phrases);
+
+            // 如果是在行動版，點擊後自動關閉側邊欄
+            if (window.innerWidth < 1024) { // 1024px 是 'lg' 斷點
+                sidebar.classList.add('-translate-x-full');
+                overlay.classList.add('hidden');
+            }
+        }
+
+        /**
+         * 更新練習模式的 UI (計數器和按鈕狀態) 並重繪卡片
+         */
+        function updatePracticeUI() {
+            if (currentPhrases.length > 0) {
+                counterElement.textContent = `${currentIndex + 1} / ${currentPhrases.length}`;
+                prevBtn.disabled = false;
+                nextBtn.disabled = false;
+            } else {
+                counterElement.textContent = '請選擇年份';
+                prevBtn.disabled = true;
+                nextBtn.disabled = true;
+            }
+            drawCard();
+        }
+
+        /**
+         * 填充總表複習 View
+         * @param {Array} phrases - 要顯示的片語陣列
+         */
+        function populateListView(phrases) {
+            listContainer.innerHTML = ''; // 清除舊內容
+
+            if (!phrases || phrases.length === 0) {
+                listContainer.innerHTML = '<p class="text-slate-500 text-center p-8">請先從側邊欄選擇一個年份。</p>';
+                return;
+            }
+
+            const table = document.createElement('table');
+            table.className = 'min-w-full divide-y divide-slate-200';
+
+            // 表格標頭
+            const thead = document.createElement('thead');
+            thead.className = 'bg-slate-50';
+            thead.innerHTML = `
+                <tr>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">片語</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">中文定義</th>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-slate-600 uppercase tracking-wider">例句</th>
+                </tr>
+            `;
+            table.appendChild(thead);
+
+            // 表格內容
+            const tbody = document.createElement('tbody');
+            tbody.className = 'bg-white divide-y divide-slate-200';
+            
+            phrases.forEach(card => {
+                const tr = document.createElement('tr');
+                
+                // 檢查例句是否存在，不存在則給予空字串
+                const exampleEn = card.example_en || '';
+                const exampleZh = card.example_zh || '';
+
+                tr.innerHTML = `
+                    <td class="px-6 py-4 whitespace-normal text-sm font-medium text-blue-600 align-top">${card.phrase}</td>
+                    <td class="px-6 py-4 whitespace-normal text-sm text-slate-700 align-top">${card.definition}</td>
+                    <td class="px-6 py-4 whitespace-normal text-sm text-slate-700 align-top">
+                        <p class="mb-1">${exampleEn}</p>
+                        <p class="text-slate-500">${exampleZh}</p>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+            table.appendChild(tbody);
+            
+            listContainer.appendChild(table);
+        }
+
+        // --- 側邊欄開關邏輯 ---
+        function setupSidebarToggle() {
+            sidebarToggle.addEventListener('click', () => {
+                sidebar.classList.toggle('-translate-x-full');
+                overlay.classList.toggle('hidden');
+            });
+            overlay.addEventListener('click', () => {
+                sidebar.classList.add('-translate-x-full');
+                overlay.classList.add('hidden');
+            });
+        }
+
+        // --- 練習模式彈窗邏輯 ---
+
+        /**
+         * 填充彈窗中的年份列表
+         */
+        function populateModalYearList() {
+            modalYearList.innerHTML = ''; // 清空
+            sortedYears.forEach(year => {
+                const div = document.createElement('div');
+                div.className = 'flex items-center';
+                const inputId = `year-check-${year}`;
+                div.innerHTML = `
+                    <input id="${inputId}" name="year-choice" value="${year}" type="checkbox" class="h-4 w-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500">
+                    <label for="${inputId}" class="ml-3 block text-sm font-medium text-slate-700">
+                        ${year} (${allData[year].length} 個)
+                    </label>
+                `;
+                modalYearList.appendChild(div);
+            });
+        }
+
+        /**
+         * 顯示練習彈窗
+         */
+        function showPracticeModal() {
+            practiceModal.classList.remove('hidden');
+        }
+
+        /**
+         * 隱藏練習彈窗
+         */
+        function hidePracticeModal() {
+            practiceModal.classList.add('hidden');
+        }
+
+        /**
+         * 陣列洗牌 (Fisher-Yates Shuffle)
+         */
+        function shuffleArray(array) {
+            let currentIndex = array.length,  randomIndex;
+            // While there remain elements to shuffle.
+            while (currentIndex != 0) {
+                // Pick a remaining element.
+                randomIndex = Math.floor(Math.random() * currentIndex);
+                currentIndex--;
+                // And swap it with the current element.
+                [array[currentIndex], array[randomIndex]] = [
+                array[randomIndex], array[currentIndex]];
+            }
+            return array;
+        }
+
+
+        /**
+         * 開始練習
+         */
+        function startPractice() {
+            const selectedYears = [];
+            document.querySelectorAll('#modal-year-list input[type="checkbox"]:checked').forEach(input => {
+                selectedYears.push(input.value);
+            });
+
+            if (selectedYears.length === 0) {
+                // 可以在這裡加一個提示，但目前先不加
+                return;
+            }
+
+            let combinedPhrases = [];
+            selectedYears.forEach(year => {
+                combinedPhrases = combinedPhrases.concat(allData[year]);
+            });
+
+            currentPhrases = shuffleArray(combinedPhrases);
+            currentIndex = 0;
+            isFlipped = false;
+            
+            hidePracticeModal();
+            listView.classList.add('hidden');
+            practiceView.classList.remove('hidden');
+            
+            updatePracticeUI();
+        }
+
+        /**
+         * 結束練習
+         */
+        function exitPractice() {
+            practiceView.classList.add('hidden');
+            listView.classList.remove('hidden');
+            currentPhrases = []; // 清空練習牌組
+            updatePracticeUI(); // 更新計數器等
+        }
+
+        // --- 事件監聽器 ---
+
+        // 點擊 Canvas 翻轉卡片
+        canvas.addEventListener('click', () => {
+            if (currentPhrases.length > 0) {
+                canvas.classList.add('is-fading'); // 開始淡出
+                setTimeout(() => {
+                    isFlipped = !isFlipped;
+                    drawCard(); // 重新繪製不可見的卡片
+                    canvas.classList.remove('is-fading'); // 開始淡入
+                }, 150); // 配合 CSS transition
+            }
+        });
+
+        // 點擊下一個
+        nextBtn.addEventListener('click', () => {
+            if (currentPhrases.length > 0) {
+                canvas.classList.add('is-fading'); // 開始淡出
+                setTimeout(() => {
+                    currentIndex = (currentIndex + 1) % currentPhrases.length;
+                    isFlipped = false;
+                    updatePracticeUI(); // 這会呼叫 drawCard()
+                    canvas.classList.remove('is-fading'); // 開始淡入
+                }, 150); // 配合 CSS transition
+            }
+        });
+
+        // 點擊上一個
+        prevBtn.addEventListener('click', () => {
+            if (currentPhrases.length > 0) {
+                canvas.classList.add('is-fading'); // 開始淡出
+                setTimeout(() => {
+                    currentIndex = (currentIndex - 1 + currentPhrases.length) % currentPhrases.length;
+                    isFlipped = false;
+                    updatePracticeUI(); // 這会呼叫 drawCard()
+                    canvas.classList.remove('is-fading'); // 開始淡入
+                }, 150); // 配合 CSS transition
+            }
+        });
+
+        // 練習模式按鈕
+        practiceBtn.addEventListener('click', showPracticeModal);
+        exitPracticeBtn.addEventListener('click', exitPractice);
+        
+        // 彈窗按鈕
+        modalCancelBtn.addEventListener('click', hidePracticeModal);
+        modalStartBtn.addEventListener('click', startPractice);
+
+        // 頁面加載完成時初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            allData = parseData(rawData);
+            createYearButtons();
+            populateModalYearList();
+            setupSidebarToggle(); // 設定側邊欄開關
+            
+            // 初始填充總表 (例如，選擇第一個年份)
+            if (sortedYears.length > 0) {
+                selectYear(sortedYears[0]);
+            } else {
+                 populateListView([]);
+            }
+
+            // 初始繪製練習區 (顯示提示)
+            updatePracticeUI(); 
+        });
+
+    </script>
+</body>
+</html>
