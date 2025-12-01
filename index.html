@@ -21,11 +21,8 @@
             width: 100%;
             height: auto;
             aspect-ratio: 800 / 500;
-            cursor: pointer;
-            /* 新增：為淡入淡出增加過場效果 */
             transition: opacity 0.15s ease-in-out;
         }
-        /* 新增：淡出時的狀態 */
         canvas.is-fading {
             opacity: 0;
         }
@@ -33,25 +30,56 @@
         .year-btn {
             width: 100%;
             text-align: left;
-            padding: 0.75rem 1rem; /* 12px 16px */
-            border-radius: 0.5rem; /* 8px */
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
             font-weight: 500;
-            color: #334155; /* slate-700 */
+            color: #334155;
             transition: background-color 0.2s, color 0.2s;
         }
         .year-btn:hover {
-/* ... existing code ... -->
-            transition: background-color 0.2s, color 0.2s;
-        }
-        .year-btn:hover {
-            background-color: #f1f5f9; /* slate-100 */
-            color: #1e293b; /* slate-800 */
+            background-color: #f1f5f9;
+            color: #1e293b;
         }
         .year-btn.active {
-            background-color: #2563eb; /* blue-600 */
+            background-color: #2563eb;
             color: white;
             font-weight: 600;
             box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.1), 0 2px 4px -1px rgba(37, 99, 235, 0.06);
+        }
+        /* 結果表格樣式 */
+        .result-row.correct {
+            background-color: #f0fdf4; /* green-50 */
+        }
+        .result-row.wrong {
+            background-color: #fef2f2; /* red-50 */
+        }
+        
+        /* 選項按鈕動畫與樣式 */
+        .option-btn {
+            transition: all 0.2s;
+        }
+        .option-btn:disabled {
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+        .option-btn.correct-answer {
+            background-color: #22c55e !important; /* green-500 */
+            color: white !important;
+            border-color: #22c55e !important;
+        }
+        .option-btn.wrong-answer {
+            background-color: #ef4444 !important; /* red-500 */
+            color: white !important;
+            border-color: #ef4444 !important;
+        }
+        /* 當已經作答時，其他未選的選項變淡 */
+        .options-grid.answered .option-btn:not(.correct-answer):not(.wrong-answer) {
+            opacity: 0.5;
+        }
+
+        /* 時間條過渡效果 */
+        #timer-bar {
+            transition: width 0.1s linear, background-color 0.3s ease;
         }
     </style>
 </head>
@@ -86,7 +114,7 @@
                 高中英文片語練習
             </h1>
             <button id="practice-btn" class="py-3 px-6 bg-blue-600 text-white rounded-lg shadow-md hover:bg-blue-700 transition-transform active:scale-95 whitespace-nowrap">
-                開始練習 🚀
+                開始測驗 (選擇題) 🚀
             </button>
         </div>
 
@@ -94,7 +122,6 @@
         <section id="list-view" class="mb-12">
             <h2 class="text-2xl font-semibold text-slate-700 mb-4">總表複習</h2>
             <div class="w-full bg-white rounded-2xl shadow-lg p-4 sm:p-8">
-                <!-- 表格將被注入到這裡 -->
                 <div id="list-container" class="overflow-x-auto">
                     <!-- JavaScript will populate this -->
                 </div>
@@ -103,60 +130,111 @@
 
         <!-- 練習模式 View (預設隱藏) -->
         <section id="practice-view" class="mb-12 hidden">
-            <div class="flex items-center gap-3 mb-6">
-                <button id="back-to-list-btn" class="flex items-center gap-2 px-3 py-2 bg-white border border-slate-300 rounded-lg text-slate-700 hover:bg-slate-50 hover:text-blue-600 transition shadow-sm group">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 group-hover:-translate-x-1 transition-transform">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
-                    </svg>
-                    <span class="font-medium">返回總表</span>
-                </button>
-                <h2 class="text-2xl font-semibold text-slate-700">練習模式</h2>
+            <!-- 遊戲資訊列：計時器與分數 (新版：包含時間條) -->
+            <div class="w-full max-w-xl lg:max-w-2xl mx-auto mb-6">
+                <div class="flex justify-between items-end mb-2">
+                    <div class="flex items-center gap-2">
+                        <span class="text-slate-500 font-medium">時間</span>
+                        <span id="timer-text" class="text-xl font-bold text-blue-600 font-mono">10</span>
+                        <span class="text-sm text-slate-400 font-medium">s</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-slate-500 font-medium">分數</span>
+                        <span id="score-display" class="text-2xl font-bold text-green-600 font-mono">0</span>
+                    </div>
+                </div>
+                <!-- 時間條 -->
+                <div class="w-full h-3 bg-slate-200 rounded-full overflow-hidden shadow-inner">
+                    <div id="timer-bar" class="h-full bg-blue-500 rounded-full" style="width: 100%"></div>
+                </div>
             </div>
-            
-            <!-- Canvas 卡片容器 -->
-            <div class="w-full max-w-xl lg:max-w-2xl mx-auto bg-white rounded-2xl shadow-lg transition-all">
+
+            <!-- Canvas 卡片容器 (題目區) -->
+            <div class="w-full max-w-xl lg:max-w-2xl mx-auto bg-white rounded-2xl shadow-lg transition-all relative mb-6">
                 <canvas id="phraseCanvas" width="800" height="500" class="rounded-2xl"></canvas>
             </div>
             
-            <!-- 導航控制區 -->
-            <div class="flex justify-between items-center w-full max-w-xl lg:max-w-2xl mx-auto mt-6">
-                <!-- 上一個按鈕 -->
-                <button id="prev-btn" class="py-3 px-6 bg-white text-slate-700 rounded-lg shadow-md hover:bg-slate-50 transition-transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
-                    &larr; 上一個
-                </button>
-                
-                <!-- 計數器 -->
-                <span id="phrase-counter" class="text-lg font-medium text-slate-700 px-4 text-center">
-                    請選擇年份
-                </span>
+            <!-- 選項按鈕區 -->
+            <div class="w-full max-w-xl lg:max-w-2xl mx-auto">
+                <div id="options-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-4 options-grid">
+                    <!-- 選項將由 JS 生成 -->
+                    <button class="option-btn p-4 bg-white border-2 border-slate-200 rounded-xl text-left hover:bg-slate-50 text-slate-700 font-medium shadow-sm active:scale-[0.98]">
+                        Option A
+                    </button>
+                    <!-- ... -->
+                </div>
 
-                <!-- 下一個按鈕 -->
-                <button id="next-btn" class="py-3 px-6 bg-blue-600 text-white rounded-lg shadow-md hover:bg-blue-700 transition-transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
-                    下一個 &rarr;
-                </button>
+                <!-- 下一題按鈕 (作答後顯示) -->
+                <div id="next-btn-container" class="hidden mt-6 flex justify-center">
+                     <button id="next-question-btn" class="w-full py-4 bg-slate-800 text-white text-xl font-bold rounded-xl shadow-lg hover:bg-slate-900 active:scale-95 transition-all">
+                        下一題 &rarr;
+                    </button>
+                </div>
+
+                <div class="text-center mt-6 flex justify-between px-4">
+                     <span id="phrase-counter" class="text-sm font-medium text-slate-500">
+                        題目 1 / 10
+                    </span>
+                    <button id="exit-practice-btn" class="text-sm text-slate-400 hover:text-red-500 transition-colors">
+                        放棄測驗
+                    </button>
+                </div>
             </div>
-            <div class="text-center mt-6">
-                <button id="exit-practice-btn" class="text-sm text-slate-500 hover:text-blue-600 transition-colors">
-                    結束練習
-                </button>
+        </section>
+
+        <!-- 結果總表 View (預設隱藏) -->
+        <section id="results-view" class="mb-12 hidden">
+            <div class="max-w-3xl mx-auto">
+                <div class="bg-white rounded-2xl shadow-xl p-6 sm:p-10 mb-8 text-center">
+                    <h2 class="text-3xl font-bold text-slate-800 mb-2">測驗完成！</h2>
+                    <p class="text-slate-500 mb-6">以下是你的成績單</p>
+                    
+                    <div class="flex justify-center gap-8 mb-8">
+                        <div class="text-center">
+                            <div class="text-sm text-slate-500 mb-1">總分</div>
+                            <div id="final-score" class="text-4xl font-bold text-blue-600">0</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-sm text-slate-500 mb-1">答對題數</div>
+                            <div id="final-correct-count" class="text-4xl font-bold text-green-600">0/10</div>
+                        </div>
+                    </div>
+
+                    <button id="restart-btn" class="py-3 px-8 bg-blue-600 text-white rounded-lg shadow-md hover:bg-blue-700 transition active:scale-95">
+                        再試一次
+                    </button>
+                    <button id="back-to-list-btn" class="ml-4 py-3 px-8 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition">
+                        回到總表
+                    </button>
+                </div>
+
+                <h3 class="text-xl font-bold text-slate-700 mb-4 px-2">詳細記錄</h3>
+                <div class="bg-white rounded-2xl shadow-lg overflow-hidden">
+                    <div id="results-container" class="overflow-x-auto">
+                        <!-- JS 將在此生成結果表格 -->
+                    </div>
+                </div>
             </div>
         </section>
 
     </main>
 
-    <!-- 練習模式彈窗 (Modal) -->
+    <!-- 練習模式設定彈窗 (Modal) -->
     <div id="practice-modal" class="fixed inset-0 z-40 bg-black/40 flex items-center justify-center p-4 hidden">
         <div class="bg-white w-full max-w-md rounded-2xl shadow-xl p-6">
-            <h3 class="text-xl font-bold text-slate-800 mb-6">選擇要練習的年份</h3>
-            <div id="modal-year-list" class="flex flex-col gap-3 max-h-60 overflow-y-auto mb-6">
+            <h3 class="text-xl font-bold text-slate-800 mb-2">開始測驗</h3>
+            <p class="text-slate-500 mb-6 text-sm">選擇出題範圍，系統將隨機抽出 10 題進行挑戰。<br>每題選項皆來自本次範圍，挑戰你的辨識力！</p>
+            
+            <div id="modal-year-list" class="flex flex-col gap-3 max-h-60 overflow-y-auto mb-6 p-1">
                 <!-- 年份核取方塊將由 JavaScript 動態生成 -->
             </div>
-            <div class="flex justify-end gap-3">
+            
+            <div class="flex justify-end gap-3 pt-4 border-t border-slate-100">
                 <button id="modal-cancel-btn" class="py-2 px-5 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition">
                     取消
                 </button>
-                <button id="modal-start-btn" class="py-2 px-5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
-                    開始
+                <button id="modal-start-btn" class="py-2 px-5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium shadow-sm">
+                    開始測驗
                 </button>
             </div>
         </div>
@@ -1193,7 +1271,7 @@ Please attach a recent photo to your application.
 make an attempt at doing sth. (to do sth.) 試圖做…
 He made an attempt to pass the exam.
 (他試圖通過考試。)
-attend to (=give one’s attention) 注意, 照顧
+attend to (=give ones attention) 注意, 照顧
 Please attend to what I am saying.
 (請注意聽我說的話。)
 attend on(upon) (=wait upon, serve) 侍候, 照料
@@ -1926,19 +2004,29 @@ The car is equipped with air conditioning.
 
         // 應用程式狀態
         let allData = {};
-        let currentYear = null; // 用於總表複習
-        let currentPhrases = []; // 用於練習模式
+        let currentYear = null;
+        let sortedYears = [];
+        
+        // 遊戲狀態 (Game State)
+        const QUESTIONS_COUNT = 10;
+        const TOTAL_TIME_MS = 10000; // 10秒
+
+        let currentPhrases = []; 
         let currentIndex = 0;
         let isFlipped = false;
-        let sortedYears = [];
+        let gameScore = 0;
+        let timerInterval = null;
+        let timeLeftMs = TOTAL_TIME_MS; // 毫秒
+        let questionResults = []; // 儲存每一題的結果 { phrase, definition, isCorrect }
 
         // DOM 元素
         const canvas = document.getElementById('phraseCanvas');
         const ctx = canvas.getContext('2d');
         const yearSelectionContainer = document.getElementById('year-selection');
         const counterElement = document.getElementById('phrase-counter');
-        const prevBtn = document.getElementById('prev-btn');
-        const nextBtn = document.getElementById('next-btn');
+        const timerText = document.getElementById('timer-text');
+        const timerBar = document.getElementById('timer-bar');
+        const scoreDisplay = document.getElementById('score-display');
         
         // 側邊欄
         const sidebarToggle = document.getElementById('sidebar-toggle');
@@ -1949,44 +2037,44 @@ The car is equipped with air conditioning.
         const listView = document.getElementById('list-view');
         const listContainer = document.getElementById('list-container');
         const practiceView = document.getElementById('practice-view');
+        const resultsView = document.getElementById('results-view');
+        const resultsContainer = document.getElementById('results-container');
 
-        // 練習按鈕
+        // 按鈕區
         const practiceBtn = document.getElementById('practice-btn');
         const exitPracticeBtn = document.getElementById('exit-practice-btn');
+        const nextQuestionBtn = document.getElementById('next-question-btn');
+        const nextBtnContainer = document.getElementById('next-btn-container');
+        const restartBtn = document.getElementById('restart-btn');
         const backToListBtn = document.getElementById('back-to-list-btn');
+        const optionsGrid = document.getElementById('options-grid');
+
 
         // 彈窗 (Modal)
         const practiceModal = document.getElementById('practice-modal');
         const modalYearList = document.getElementById('modal-year-list');
         const modalCancelBtn = document.getElementById('modal-cancel-btn');
         const modalStartBtn = document.getElementById('modal-start-btn');
-
-
+        
         /**
          * 解析原始資料字串並將其轉換為結構化物件
          */
         function parseData(text) {
             const lines = text.trim().split('\n');
             const data = {};
-            let currentYearKey = "112學測"; // *** CHANGED ***
+            let currentYearKey = "112學測";
             data[currentYearKey] = [];
             let currentCard = {};
-            let cardStep = 0; // 0: 尋找片語/標題, 1: 尋找英文例句, 2: 尋找中文例句
+            let cardStep = 0;
 
             for (let i = 0; i < lines.length; i++) {
                 const line = lines[i].trim();
-                if (!line) continue; // 跳過空行
+                if (!line) continue;
 
-                // --- 檢查是否為標題 ---
-                // 標題 1: 111學測, 110指考
-                // 標題 2: 實用會考片語 ...
-                // 標題 3: 學測必考片語 1 (新增的檢查)
                 if (/^\d{3}(學測|指考)$/.test(line) || line.startsWith('實用會考片語') || /^學測必考片語 \d+$/.test(line)) {
-                    // 如果是標題, 結束上一張卡片 (如果有的話)
                     if (cardStep !== 0 && currentCard.phrase) {
                         data[currentYearKey].push(currentCard);
                     }
-                    // 設置新標題
                     currentYearKey = line;
                     if (!data[currentYearKey]) {
                         data[currentYearKey] = [];
@@ -1996,83 +2084,61 @@ The car is equipped with air conditioning.
                     continue;
                 }
 
-                // --- 狀態機解析 ---
                 const chineseCharIndex = line.search(/[\u4e00-\u9fa5]/);
 
                 if (cardStep === 0) {
-                    // 尋找片語/定義
-                    // (e.g., "in no time 馬上" or "boast of (or about) 吹噓")
                     if (chineseCharIndex > 0 && !line.startsWith('(') && !line.startsWith("'")) {
                         currentCard = {
                             phrase: line.substring(0, chineseCharIndex).trim(),
                             definition: line.substring(chineseCharIndex).trim()
                         };
-                        cardStep = 1; // 進入下一步 (尋找 EN 例句)
+                        cardStep = 1; 
                     }
-                    // else: 忽略 (可能是 '---' 註解行)
-                
                 } else if (cardStep === 1) {
-                    // 尋找英文例句
-                    // 檢查這行 *不是* 另一個片語/定義, 也 *不是* '(...)'
                     if (chineseCharIndex <= 0 && !line.startsWith('(') && !line.startsWith("'")) {
                         currentCard.example_en = line;
-                        cardStep = 2; // 進入下一步 (尋找 ZH 例句)
+                        cardStep = 2; 
                     } 
-                    // 檢查這行 *是* 另一個片語/定義 (表示上張卡片是 1-line 格式)
                     else if (chineseCharIndex > 0 && !line.startsWith('(') && !line.startsWith("'")) {
-                        // 儲存上一張 (1-line) 卡片
                         data[currentYearKey].push(currentCard);
-                        // 開始這張新卡片
                         currentCard = {
                             phrase: line.substring(0, chineseCharIndex).trim(),
                             definition: line.substring(chineseCharIndex).trim()
                         };
-                        cardStep = 1; // 保持在 step 1
+                        cardStep = 1; 
                     }
-                    // 檢查這行 *是* ZH 例句 (表示上張卡片是 2-line 格式, 缺 EN)
                     else if (line.startsWith('(')) {
                         currentCard.example_zh = line.replace(/^\(|\)$/g, '');
                         data[currentYearKey].push(currentCard);
                         currentCard = {};
                         cardStep = 0;
                     }
-                    // else: 忽略, 保持 in step 1
-
                 } else if (cardStep === 2) {
-                    // 尋找中文例句
                     if (line.startsWith('(')) {
                         currentCard.example_zh = line.replace(/^\(|\)$/g, '');
-                        data[currentYearKey].push(currentCard); // 儲存 (3-line) 卡片
+                        data[currentYearKey].push(currentCard); 
                         currentCard = {};
                         cardStep = 0;
                     }
-                    // 檢查這行 *是* 另一個片語/定義 (表示上張卡片是 2-line 格式)
                     else if (chineseCharIndex > 0 && !line.startsWith('(') && !line.startsWith("'")) {
-                        // 儲存上一張 (2-line) 卡片
                         data[currentYearKey].push(currentCard);
-                        // 開始這張新卡片
                         currentCard = {
                             phrase: line.substring(0, chineseCharIndex).trim(),
                             definition: line.substring(chineseCharIndex).trim()
                         };
-                        cardStep = 1; // 轉到 step 1
+                        cardStep = 1; 
                     }
-                    // else: 忽略 (格式錯誤), 重置
                     else {
-                        data[currentYearKey].push(currentCard); // 儲存 (2-line) 卡片
+                        data[currentYearKey].push(currentCard);
                         currentCard = {};
                         cardStep = 0;
                     }
                 }
             }
-            
-            // 處理檔案結尾的最後一張卡片
             if (currentCard.phrase) {
                 data[currentYearKey].push(currentCard);
             }
 
-
-            // 過濾掉沒有內容的年份
             Object.keys(data).forEach(key => {
                 if (data[key].length === 0) {
                     delete data[key];
@@ -2082,10 +2148,7 @@ The car is equipped with air conditioning.
             return data;
         }
 
-
-        /**
-         * 在 Canvas 上繪製圓角矩形 (卡片背景)
-         */
+        // --- Canvas 繪圖邏輯 ---
         function drawRoundRect(ctx, x, y, width, height, radius) {
             ctx.beginPath();
             ctx.moveTo(x + radius, y);
@@ -2101,19 +2164,14 @@ The car is equipped with air conditioning.
             ctx.fill();
         }
 
-        /**
-         * 在 Canvas 上繪製自動換行的文字
-         * @returns {number} - 傳回繪製完畢後的 y 座標
-         */
         function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
-            if (!text) return y; // 處理空文字
+            if (!text) return y;
             const words = text.split(' ');
             let line = '';
             let currentY = y;
 
             for (let n = 0; n < words.length; n++) {
                 let testLine = line + words[n] + ' ';
-                // 檢查是否包含中文字元，如果是，則以字為單位
                 if (/[\u4e00-\u9fa5]/.test(words[n])) {
                     const chars = words[n];
                     for(let j = 0; j < chars.length; j++) {
@@ -2127,9 +2185,8 @@ The car is equipped with air conditioning.
                             line = testCharLine;
                         }
                     }
-                    line += ' '; // 加回空格
+                    line += ' '; 
                 } else {
-                    // 英文單字處理
                     let metrics = ctx.measureText(testLine);
                     let testWidth = metrics.width;
                     if (testWidth > maxWidth && n > 0) {
@@ -2145,15 +2202,10 @@ The car is equipped with air conditioning.
             return currentY + lineHeight;
         }
 
-        /**
-         * 繪製當前的卡片 (練習模式)
-         */
         function drawCard() {
-            // 清除畫布
-            ctx.fillStyle = '#ffffff'; // 使用白色背景 (因為容器是白色)
+            ctx.fillStyle = '#ffffff'; 
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // 設置卡片邊距和圓角
             const padding = 30;
             const cardX = padding;
             const cardY = padding;
@@ -2161,55 +2213,45 @@ The car is equipped with air conditioning.
             const cardHeight = canvas.height - padding * 2;
             const cardRadius = 20;
 
-            // 繪製卡片陰影
             ctx.shadowColor = 'rgba(0, 0, 0, 0.08)';
             ctx.shadowBlur = 20;
             ctx.shadowOffsetX = 0;
             ctx.shadowOffsetY = 5;
 
-            // 繪製卡片背景
-            ctx.fillStyle = '#f8fafc'; // 卡片使用一個非常淺的灰色
+            ctx.fillStyle = '#f8fafc'; 
             drawRoundRect(ctx, cardX, cardY, cardWidth, cardHeight, cardRadius);
 
-            // 重置陰影
             ctx.shadowColor = 'transparent';
 
-            // 檢查是否有選中的年份
             if (currentPhrases.length === 0) {
                 ctx.fillStyle = '#334155';
                 ctx.font = 'bold 28px Inter';
                 ctx.textAlign = 'center';
-                ctx.fillText('點擊上方按鈕開始練習', canvas.width / 2, canvas.height / 2);
+                ctx.fillText('準備開始練習...', canvas.width / 2, canvas.height / 2);
                 return;
             }
 
             const card = currentPhrases[currentIndex];
-            if (!card) return; // 安全檢查
+            if (!card) return; 
 
             if (!isFlipped) {
-                // --- 卡片正面 (題目) ---
-                
-                // 繪製片語
+                // 正面 (只顯示片語)
                 ctx.fillStyle = '#1e293b';
                 ctx.font = 'bold 44px Inter';
                 ctx.textAlign = 'center';
-                // 垂直居中
-                const textY = canvas.height / 2 + 15; 
-                wrapText(ctx, card.phrase, canvas.width / 2, textY - 40, cardWidth - 60, 50);
+                const textY = canvas.height / 2; 
+                wrapText(ctx, card.phrase, canvas.width / 2, textY, cardWidth - 60, 50);
 
-                // 繪製提示文字
                 ctx.fillStyle = '#64748b';
                 ctx.font = '18px "Noto Sans TC"';
                 ctx.textAlign = 'center';
-                ctx.fillText('點擊卡片翻面', canvas.width / 2, canvas.height - 60);
-
+                ctx.fillText('請選擇正確定義', canvas.width / 2, canvas.height - 60);
             } else {
-                // --- 卡片反面 (答案) ---
-                let currentY = cardY + 60; // 頂部起始 Y 座標
+                // 反面 (答題後顯示：片語 + 完整定義 + 例句)
+                let currentY = cardY + 60;
                 const contentX = cardX + 40;
                 const contentWidth = cardWidth - 80;
 
-                // 繪製片語
                 ctx.fillStyle = '#1e293b';
                 ctx.font = 'bold 30px Inter';
                 ctx.textAlign = 'center';
@@ -2217,15 +2259,13 @@ The car is equipped with air conditioning.
                 
                 currentY += 10;
 
-                // 繪製定義
-                ctx.fillStyle = '#2563eb'; // 藍色
+                ctx.fillStyle = '#2563eb';
                 ctx.font = 'bold 24px "Noto Sans TC"';
                 ctx.textAlign = 'center';
                 currentY = wrapText(ctx, card.definition, canvas.width / 2, currentY, contentWidth, 32);
 
-                currentY += 25; // 分隔線前的間距
+                currentY += 25;
 
-                // 繪製分隔線
                 ctx.strokeStyle = '#e2e8f0';
                 ctx.lineWidth = 2;
                 ctx.beginPath();
@@ -2233,17 +2273,15 @@ The car is equipped with air conditioning.
                 ctx.lineTo(contentX + contentWidth, currentY);
                 ctx.stroke();
 
-                currentY += 35; // 分隔線後的間距
+                currentY += 35;
 
-                // 繪製英文例句
                 ctx.fillStyle = '#334155';
                 ctx.font = '22px Inter';
                 ctx.textAlign = 'left';
                 currentY = wrapText(ctx, card.example_en, contentX, currentY, contentWidth, 30);
                 
-                currentY += 20; // 中英文例句間距
+                currentY += 20;
 
-                // 繪製中文例句
                 ctx.fillStyle = '#64748b';
                 ctx.font = '20px "Noto Sans TC"';
                 ctx.textAlign = 'left';
@@ -2251,31 +2289,24 @@ The car is equipped with air conditioning.
             }
         }
 
-        /**
-         * 創建年份選擇按鈕 (側邊欄)
-         */
+        // --- 邏輯功能區 ---
+
         function createYearButtons() {
-            // 獲取所有年份並排序
             sortedYears = Object.keys(allData).sort((a, b) => b.localeCompare(a, 'zh-Hant-TW-u-kn-true'));
             
             sortedYears.forEach(year => {
                 const button = document.createElement('button');
                 button.textContent = year;
-                button.className = 'year-btn'; // 使用 <style> 中定義的 class
+                button.className = 'year-btn';
                 button.onclick = () => selectYear(year);
                 yearSelectionContainer.appendChild(button);
             });
         }
 
-        /**
-         * 選擇一個年份 (用於總表複習)
-         * @param {string} year - 選擇的年份
-         */
         function selectYear(year) {
             currentYear = year;
             const phrases = allData[year];
 
-            // 更新按鈕的 active 狀態
             document.querySelectorAll('.year-btn').forEach(btn => {
                 if (btn.textContent === year) {
                     btn.classList.add('active');
@@ -2284,38 +2315,16 @@ The car is equipped with air conditioning.
                 }
             });
 
-            // 更新總表
             populateListView(phrases);
 
-            // 如果是在行動版，點擊後自動關閉側邊欄
-            if (window.innerWidth < 1024) { // 1024px 是 'lg' 斷點
+            if (window.innerWidth < 1024) {
                 sidebar.classList.add('-translate-x-full');
                 overlay.classList.add('hidden');
             }
         }
 
-        /**
-         * 更新練習模式的 UI (計數器和按鈕狀態) 並重繪卡片
-         */
-        function updatePracticeUI() {
-            if (currentPhrases.length > 0) {
-                counterElement.textContent = `${currentIndex + 1} / ${currentPhrases.length}`;
-                prevBtn.disabled = false;
-                nextBtn.disabled = false;
-            } else {
-                counterElement.textContent = '請選擇年份';
-                prevBtn.disabled = true;
-                nextBtn.disabled = true;
-            }
-            drawCard();
-        }
-
-        /**
-         * 填充總表複習 View
-         * @param {Array} phrases - 要顯示的片語陣列
-         */
         function populateListView(phrases) {
-            listContainer.innerHTML = ''; // 清除舊內容
+            listContainer.innerHTML = ''; 
 
             if (!phrases || phrases.length === 0) {
                 listContainer.innerHTML = '<p class="text-slate-500 text-center p-8">請先從側邊欄選擇一個年份。</p>';
@@ -2325,7 +2334,6 @@ The car is equipped with air conditioning.
             const table = document.createElement('table');
             table.className = 'min-w-full divide-y divide-slate-200';
 
-            // 表格標頭
             const thead = document.createElement('thead');
             thead.className = 'bg-slate-50';
             thead.innerHTML = `
@@ -2337,14 +2345,11 @@ The car is equipped with air conditioning.
             `;
             table.appendChild(thead);
 
-            // 表格內容
             const tbody = document.createElement('tbody');
             tbody.className = 'bg-white divide-y divide-slate-200';
             
             phrases.forEach(card => {
                 const tr = document.createElement('tr');
-                
-                // 檢查例句是否存在，不存在則給予空字串
                 const exampleEn = card.example_en || '';
                 const exampleZh = card.example_zh || '';
 
@@ -2359,78 +2364,54 @@ The car is equipped with air conditioning.
                 tbody.appendChild(tr);
             });
             table.appendChild(tbody);
-            
             listContainer.appendChild(table);
         }
 
-        // --- 側邊欄開關邏輯 ---
-        function setupSidebarToggle() {
-            sidebarToggle.addEventListener('click', () => {
-                sidebar.classList.toggle('-translate-x-full');
-                overlay.classList.toggle('hidden');
-            });
-            overlay.addEventListener('click', () => {
-                sidebar.classList.add('-translate-x-full');
-                overlay.classList.add('hidden');
-            });
-        }
+        // --- 練習模式邏輯 ---
 
-        // --- 練習模式彈窗邏輯 ---
-
-        /**
-         * 填充彈窗中的年份列表
-         */
         function populateModalYearList() {
-            modalYearList.innerHTML = ''; // 清空
+            modalYearList.innerHTML = '';
             sortedYears.forEach(year => {
                 const div = document.createElement('div');
-                div.className = 'flex items-center';
+                div.className = 'flex items-center p-2 hover:bg-slate-50 rounded';
                 const inputId = `year-check-${year}`;
                 div.innerHTML = `
-                    <input id="${inputId}" name="year-choice" value="${year}" type="checkbox" class="h-4 w-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500">
-                    <label for="${inputId}" class="ml-3 block text-sm font-medium text-slate-700">
-                        ${year} (${allData[year].length} 個)
+                    <input id="${inputId}" name="year-choice" value="${year}" type="checkbox" class="h-5 w-5 text-blue-600 border-slate-300 rounded focus:ring-blue-500 cursor-pointer">
+                    <label for="${inputId}" class="ml-3 block text-base font-medium text-slate-700 cursor-pointer w-full">
+                        ${year} <span class="text-slate-400 text-sm">(${allData[year].length} 題)</span>
                     </label>
                 `;
                 modalYearList.appendChild(div);
             });
         }
 
-        /**
-         * 顯示練習彈窗
-         */
         function showPracticeModal() {
             practiceModal.classList.remove('hidden');
         }
 
-        /**
-         * 隱藏練習彈窗
-         */
         function hidePracticeModal() {
             practiceModal.classList.add('hidden');
         }
 
-        /**
-         * 陣列洗牌 (Fisher-Yates Shuffle)
-         */
         function shuffleArray(array) {
             let currentIndex = array.length,  randomIndex;
-            // While there remain elements to shuffle.
             while (currentIndex != 0) {
-                // Pick a remaining element.
                 randomIndex = Math.floor(Math.random() * currentIndex);
                 currentIndex--;
-                // And swap it with the current element.
                 [array[currentIndex], array[randomIndex]] = [
                 array[randomIndex], array[currentIndex]];
             }
             return array;
         }
 
+        // 從陣列中隨機取出 n 個元素 (不包含 excludeItem)
+        function getRandomDistractors(array, n, excludeItem) {
+            // 過濾掉正確答案
+            const pool = array.filter(item => item !== excludeItem);
+            // 洗牌並取前 n 個
+            return shuffleArray([...pool]).slice(0, n);
+        }
 
-        /**
-         * 開始練習
-         */
         function startPractice() {
             const selectedYears = [];
             document.querySelectorAll('#modal-year-list input[type="checkbox"]:checked').forEach(input => {
@@ -2438,7 +2419,7 @@ The car is equipped with air conditioning.
             });
 
             if (selectedYears.length === 0) {
-                // 可以在這裡加一個提示，但目前先不加
+                alert('請至少選擇一個年份！');
                 return;
             }
 
@@ -2447,94 +2428,292 @@ The car is equipped with air conditioning.
                 combinedPhrases = combinedPhrases.concat(allData[year]);
             });
 
-            currentPhrases = shuffleArray(combinedPhrases);
+            // 確保有足夠題目生成選項
+            if (combinedPhrases.length < 4) {
+                 alert('題庫數量不足以生成選項，請選擇更多年份。');
+                 return;
+            }
+
+            // 隨機選取 QUESTIONS_COUNT 題 (或全部，如果少於 QUESTIONS_COUNT)
+            const shuffledPool = shuffleArray([...combinedPhrases]);
+            const selectedQuestions = shuffledPool.slice(0, QUESTIONS_COUNT);
+
+            // 為每一題生成選項
+            currentPhrases = selectedQuestions.map(question => {
+                // 從全部的 combinedPhrases 中挑選 3 個錯誤答案 (確保只在選定範圍內)
+                const distractors = getRandomDistractors(combinedPhrases, 3, question);
+                
+                // 組合正確答案和干擾項
+                const options = shuffleArray([question, ...distractors]);
+                
+                return {
+                    ...question,
+                    options: options
+                };
+            });
+
+            // 重置遊戲狀態
             currentIndex = 0;
-            isFlipped = false;
+            gameScore = 0;
+            questionResults = [];
             
+            // UI 更新
+            scoreDisplay.textContent = '0';
             hidePracticeModal();
             listView.classList.add('hidden');
+            resultsView.classList.add('hidden');
             practiceView.classList.remove('hidden');
             
-            updatePracticeUI();
+            // 開始第一題
+            loadQuestion();
         }
 
-        /**
-         * 結束練習
-         */
+        function loadQuestion() {
+            isFlipped = false;
+            counterElement.textContent = `題目 ${currentIndex + 1} / ${currentPhrases.length}`;
+            nextBtnContainer.classList.add('hidden');
+            optionsGrid.classList.remove('answered');
+            
+            const currentQuestion = currentPhrases[currentIndex];
+
+            // 繪製題目 (Canvas)
+            drawCard();
+
+            // 生成選項按鈕
+            optionsGrid.innerHTML = '';
+            currentQuestion.options.forEach((opt, index) => {
+                const btn = document.createElement('button');
+                btn.className = 'option-btn p-4 bg-white border-2 border-slate-200 rounded-xl text-left hover:bg-slate-50 text-slate-700 font-medium shadow-sm active:scale-[0.98]';
+                btn.textContent = `${String.fromCharCode(65 + index)}. ${opt.definition}`; // A. 定義...
+                btn.onclick = () => handleAnswer(opt, btn);
+                optionsGrid.appendChild(btn);
+            });
+
+            // 重置倒數計時器
+            startTimer();
+        }
+
+        function startTimer() {
+            timeLeftMs = TOTAL_TIME_MS;
+            updateTimerUI();
+
+            if (timerInterval) clearInterval(timerInterval);
+
+            // 100ms 更新一次，讓時間條比較順暢
+            timerInterval = setInterval(() => {
+                timeLeftMs -= 100;
+                if (timeLeftMs < 0) timeLeftMs = 0;
+                
+                updateTimerUI();
+
+                if (timeLeftMs <= 0) {
+                    clearInterval(timerInterval);
+                    handleTimeOut();
+                }
+            }, 100);
+        }
+
+        function updateTimerUI() {
+            // 更新數字 (無條件進位到秒)
+            const secondsLeft = Math.ceil(timeLeftMs / 1000);
+            timerText.textContent = secondsLeft;
+            
+            // 變色警告 (小於等於3秒時變紅)
+            if (secondsLeft <= 3) {
+                timerText.classList.remove('text-blue-600');
+                timerText.classList.add('text-red-600');
+                
+                timerBar.classList.remove('bg-blue-500');
+                timerBar.classList.add('bg-red-500');
+            } else {
+                timerText.classList.remove('text-red-600');
+                timerText.classList.add('text-blue-600');
+                
+                timerBar.classList.remove('bg-red-500');
+                timerBar.classList.add('bg-blue-500');
+            }
+
+            // 更新時間條寬度
+            const percentage = (timeLeftMs / TOTAL_TIME_MS) * 100;
+            timerBar.style.width = `${percentage}%`;
+        }
+
+        function handleTimeOut() {
+            // 超時視為答錯
+            // 找到正確答案的按鈕並標示
+            const currentQuestion = currentPhrases[currentIndex];
+            const correctBtn = Array.from(optionsGrid.children).find(btn => 
+                btn.textContent.includes(currentQuestion.definition)
+            );
+            handleAnswer(null, null, true); // isTimeout = true
+        }
+
+        function handleAnswer(selectedOption, selectedBtn, isTimeout = false) {
+            if (timerInterval) clearInterval(timerInterval);
+            
+            const currentQuestion = currentPhrases[currentIndex];
+            const isCorrect = !isTimeout && (selectedOption.phrase === currentQuestion.phrase);
+            const secondsLeft = Math.ceil(timeLeftMs / 1000);
+
+            // 計分
+            let points = 0;
+            if (isCorrect) {
+                points = 10 + (secondsLeft * 2);
+            }
+            gameScore += points;
+            scoreDisplay.textContent = gameScore;
+
+            // 記錄結果
+            questionResults.push({
+                phrase: currentQuestion.phrase,
+                definition: currentQuestion.definition,
+                isCorrect: isCorrect,
+                timeSpent: (TOTAL_TIME_MS - timeLeftMs) / 1000
+            });
+
+            // UI 反饋
+            optionsGrid.classList.add('answered'); // 讓未選的變淡
+            const buttons = Array.from(optionsGrid.children);
+            
+            buttons.forEach(btn => {
+                btn.disabled = true; // 禁用所有按鈕
+                // 標記正確答案
+                if (btn.textContent.includes(currentQuestion.definition)) {
+                    btn.classList.add('correct-answer');
+                }
+            });
+
+            // 如果選錯或超時，標記錯誤 (紅色)
+            if (!isCorrect && !isTimeout && selectedBtn) {
+                selectedBtn.classList.add('wrong-answer');
+            }
+
+            // 翻開 Canvas 顯示詳解
+            isFlipped = true;
+            canvas.classList.add('is-fading');
+            setTimeout(() => {
+                drawCard();
+                canvas.classList.remove('is-fading');
+            }, 150);
+
+            // 顯示下一題按鈕
+            nextBtnContainer.classList.remove('hidden');
+        }
+
+        function nextQuestion() {
+            currentIndex++;
+            if (currentIndex < currentPhrases.length) {
+                canvas.classList.add('is-fading');
+                setTimeout(() => {
+                    loadQuestion();
+                    canvas.classList.remove('is-fading');
+                }, 150);
+            } else {
+                endPractice();
+            }
+        }
+
+        function endPractice() {
+            practiceView.classList.add('hidden');
+            resultsView.classList.remove('hidden');
+            renderResults();
+        }
+
+        function renderResults() {
+            const finalScoreEl = document.getElementById('final-score');
+            const finalCorrectCountEl = document.getElementById('final-correct-count');
+            
+            const correctCount = questionResults.filter(r => r.isCorrect).length;
+            
+            finalScoreEl.textContent = gameScore;
+            finalCorrectCountEl.textContent = `${correctCount} / ${currentPhrases.length}`;
+
+            resultsContainer.innerHTML = '';
+            const table = document.createElement('table');
+            table.className = 'min-w-full divide-y divide-slate-200';
+            
+            const thead = document.createElement('thead');
+            thead.className = 'bg-slate-50';
+            thead.innerHTML = `
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-bold text-slate-600 uppercase">狀態</th>
+                    <th class="px-6 py-3 text-left text-xs font-bold text-slate-600 uppercase">片語</th>
+                    <th class="px-6 py-3 text-left text-xs font-bold text-slate-600 uppercase">定義</th>
+                </tr>
+            `;
+            table.appendChild(thead);
+
+            const tbody = document.createElement('tbody');
+            tbody.className = 'bg-white divide-y divide-slate-200';
+
+            questionResults.forEach(res => {
+                const tr = document.createElement('tr');
+                tr.className = `result-row ${res.isCorrect ? 'correct' : 'wrong'}`;
+                
+                const statusIcon = res.isCorrect 
+                    ? `<span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-green-100 text-green-600 font-bold">O</span>` 
+                    : `<span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-red-100 text-red-600 font-bold">X</span>`;
+
+                tr.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap">${statusIcon}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-800">${res.phrase}</td>
+                    <td class="px-6 py-4 text-sm text-slate-600">${res.definition}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+            table.appendChild(tbody);
+            resultsContainer.appendChild(table);
+        }
+
         function exitPractice() {
+            if (timerInterval) clearInterval(timerInterval);
             practiceView.classList.add('hidden');
             listView.classList.remove('hidden');
-            currentPhrases = []; // 清空練習牌組
-            updatePracticeUI(); // 更新計數器等
         }
 
-        // --- 事件監聽器 ---
+        function restartPractice() {
+            resultsView.classList.add('hidden');
+            showPracticeModal();
+        }
 
-        // 點擊 Canvas 翻轉卡片
-        canvas.addEventListener('click', () => {
-            if (currentPhrases.length > 0) {
-                canvas.classList.add('is-fading'); // 開始淡出
-                setTimeout(() => {
-                    isFlipped = !isFlipped;
-                    drawCard(); // 重新繪製不可見的卡片
-                    canvas.classList.remove('is-fading'); // 開始淡入
-                }, 150); // 配合 CSS transition
-            }
+        function backToList() {
+            resultsView.classList.add('hidden');
+            listView.classList.remove('hidden');
+        }
+
+        // --- 事件綁定 ---
+
+        sidebarToggle.addEventListener('click', () => {
+            sidebar.classList.toggle('-translate-x-full');
+            overlay.classList.toggle('hidden');
+        });
+        overlay.addEventListener('click', () => {
+            sidebar.classList.add('-translate-x-full');
+            overlay.classList.add('hidden');
         });
 
-        // 點擊下一個
-        nextBtn.addEventListener('click', () => {
-            if (currentPhrases.length > 0) {
-                canvas.classList.add('is-fading'); // 開始淡出
-                setTimeout(() => {
-                    currentIndex = (currentIndex + 1) % currentPhrases.length;
-                    isFlipped = false;
-                    updatePracticeUI(); // 這会呼叫 drawCard()
-                    canvas.classList.remove('is-fading'); // 開始淡入
-                }, 150); // 配合 CSS transition
-            }
-        });
-
-        // 點擊上一個
-        prevBtn.addEventListener('click', () => {
-            if (currentPhrases.length > 0) {
-                canvas.classList.add('is-fading'); // 開始淡出
-                setTimeout(() => {
-                    currentIndex = (currentIndex - 1 + currentPhrases.length) % currentPhrases.length;
-                    isFlipped = false;
-                    updatePracticeUI(); // 這会呼叫 drawCard()
-                    canvas.classList.remove('is-fading'); // 開始淡入
-                }, 150); // 配合 CSS transition
-            }
-        });
-
-        // 練習模式按鈕
         practiceBtn.addEventListener('click', showPracticeModal);
         exitPracticeBtn.addEventListener('click', exitPractice);
-        if (backToListBtn) {
-            backToListBtn.addEventListener('click', exitPractice);
-        }
         
-        // 彈窗按鈕
         modalCancelBtn.addEventListener('click', hidePracticeModal);
         modalStartBtn.addEventListener('click', startPractice);
 
-        // 頁面加載完成時初始化
+        nextQuestionBtn.addEventListener('click', nextQuestion);
+
+        restartBtn.addEventListener('click', restartPractice);
+        backToListBtn.addEventListener('click', backToList);
+
+        // 初始化
         document.addEventListener('DOMContentLoaded', () => {
             allData = parseData(rawData);
             createYearButtons();
             populateModalYearList();
-            setupSidebarToggle(); // 設定側邊欄開關
             
-            // 初始填充總表 (例如，選擇第一個年份)
             if (sortedYears.length > 0) {
                 selectYear(sortedYears[0]);
             } else {
                  populateListView([]);
             }
-
-            // 初始繪製練習區 (顯示提示)
-            updatePracticeUI(); 
         });
 
     </script>
